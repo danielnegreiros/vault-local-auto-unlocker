@@ -1,0 +1,19 @@
+manager:
+  repeat_interval: 60 # seconds
+  operation_timeout: 50 # seconds
+
+unlocker:
+  number_keys: 3
+  request_timeout: 5
+  # url: http://localhost:8200
+
+encryption:
+  path: "./tests/vault/data/"
+
+storage:
+  type: boltdb
+  kubernetes:
+    access: out-cluster
+    namespace: monitoring
+  boltdb:
+    path: "./tests/vault/data/integration.db"
