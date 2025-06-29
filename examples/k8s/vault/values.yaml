@@ -1,7 +1,5 @@
 vault:
   server:
-    image:
-      pullPolicy: IfNotPresent
     extraContainers:
       - name: vault-local-auto-unlocker
         image: danielnegreiros/vault-local-auto-unlocker:latest
@@ -12,6 +10,3 @@ vault:
       - name: home-volume
         persistentVolumeClaim:
           claimName: home-pvc
-    service:
-      type: NodePort
-      nodePort: 30040
