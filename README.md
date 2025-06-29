@@ -21,7 +21,7 @@ This auto-unlocker solves that problem:
 
 ## ⚙️ How It Works
 
-Deploy this tool as a sidecar container alongside your Vault instance (compatible with the Vault Helm Chart). See example section [deploy](./examples/k8s/vault/README.md) [values.yaml](./examples/k8s/vault/values.yaml).
+Deploy this tool as a sidecar container alongside your Vault instance (compatible with the Vault Helm Chart). See example section [deploy](./examples/k8s/vault/README.md) and [values.yaml](./examples/k8s/vault/values.yaml).
 Upon pod startup, the sidecar:
 - Checks if Vault is already initialized.
 - If not, it initializes Vault and stores the keys securely (encrypted and local).
