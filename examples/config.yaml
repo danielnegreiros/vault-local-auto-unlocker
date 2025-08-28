@@ -17,3 +17,8 @@ storage:
     namespace: monitoring
   boltdb:
     path: "./tests/vault/data/integration.db"
+
+  provisioner:
+    - type: kv-v2
+      mountPath: something
+

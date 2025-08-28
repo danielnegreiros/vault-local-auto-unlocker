@@ -84,12 +84,12 @@ func (v *vaultManager) Unlock(ctx context.Context) error {
 			return fmt.Errorf("unlock: [%w]", err)
 		}
 
-		v.enableKV(ctx, kvPath, kvType, token)
+		err = v.enableKV(ctx, kvPath, kvType, token)
 		if err != nil {
 			return fmt.Errorf("enable kv: (%s, %s) [%w]", kvPath, kvType, err)
 		}
 
-		v.addKVtoSecret(ctx, kvKey, kvPath, dataKeys, token)
+		err = v.addKVtoSecret(ctx, kvKey, kvPath, dataKeys, token)
 		if err != nil {
 			return fmt.Errorf("add kv to secret: (%s, %s) [%w]", kvKey, kvPath, err)
 		}

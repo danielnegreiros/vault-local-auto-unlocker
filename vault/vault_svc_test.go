@@ -190,6 +190,7 @@ path "unlocker/data/keys" {
 	assert.NoError(t, err)
 
 	ctx := context.Background()
-	vm.createPolicy(ctx, "unlocker", policy, "<token>")
+	err = vm.createPolicy(ctx, "unlocker", policy, "<token>")
+	assert.NoError(t, err)
 
 }

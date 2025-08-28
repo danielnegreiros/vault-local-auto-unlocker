@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"log/slog"
 	"os"
 	"testing"
 	"vault-unlocker/conf"
@@ -30,8 +31,17 @@ storage:
 
 	code := m.Run()
 
-	boltDB.db.Close()
-	os.Remove(boltDB.path)
+	err = boltDB.db.Close()
+	if err != nil {
+		slog.Error("error closing boltdb", "error", err)
+		os.Exit(1)
+	}
+
+	err = os.Remove(boltDB.path)
+	if err != nil {
+		slog.Error("error cleaning boltdb", "error", err)
+		os.Exit(1)
+	}
 	os.Exit(code)
 }
 

@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	confPath = "./examples/config.yaml"
+	defaultConfPath = "./examples/config.yaml"
 )
 
 func main() {
@@ -29,12 +29,13 @@ func main() {
 	var err error
 
 	confPath := os.Getenv("CONF_PATH")
-	if confPath != "" {
-		content, err = conf.ReadFile(confPath)
-		if err != nil {
-			slog.Error("load config", "err", err)
-		}
+	if confPath == "" {
+		confPath = defaultConfPath
+	}
 
+	content, err = conf.ReadFile(confPath)
+	if err != nil {
+		slog.Error("load config", "err", err)
 	}
 
 	c, err := conf.NewConfig(content)
@@ -79,8 +80,8 @@ func main() {
 	for {
 		select {
 		case <-ticker.C:
+			wg.Add(1)
 			go func() {
-				wg.Add(1)
 				defer wg.Done()
 				opCtx, cancel := context.WithTimeout(ctx, 50*time.Second)
 				defer cancel()
