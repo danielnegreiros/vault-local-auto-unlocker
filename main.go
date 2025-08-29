@@ -35,7 +35,7 @@ func main() {
 
 	content, err = conf.ReadFile(confPath)
 	if err != nil {
-		slog.Error("load config", "err", err)
+		slog.Warn("load config, using defaults", "err", err)
 	}
 
 	c, err := conf.NewConfig(content)

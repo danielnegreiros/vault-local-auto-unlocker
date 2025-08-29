@@ -148,7 +148,50 @@ provisioner:
 
 }
 
-func TestSecretNoSecret(t *testing.T) {
+func TestOnlyProvisioningStorageData(t *testing.T) {
+
+	var data = []byte(`
+storage:
+  type: boltdb
+  kubernetes:
+    access: out-cluster
+    namespace: monitoring
+  boltdb:
+    path: "../tests/vault/data/integration.db"
+
+provisioner:
+  mounts:
+  - type: kv-v2
+    path: something
+    secrets:
+      - path: abc/def
+        name: secret-name
+        data:
+          k1: v1
+          k2: "*random*"
+      - path: xxx/yyy
+        name: secret-name
+        data:
+          k1: v1
+          k2: v2
+
+`)
+
+	vm, err := setup(data)
+	assert.NoError(t, err)
+
+	token, err := vm.storage.RetrieveKey("keys", "token")
+	assert.NoError(t, err)
+
+	slog.Info("making it easier for manual checking on localhost:8200", "token", token)
+	ctx := context.Background()
+
+	err = vm.provisioningSecrets(ctx)
+	assert.NoError(t, err)
+
+}
+
+func TestOnlyProvisioningData(t *testing.T) {
 
 	var data = []byte(`
 manager:
