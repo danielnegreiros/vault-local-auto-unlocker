@@ -56,7 +56,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	vm, err := vault_manager.NewVaultManager(c.Unlocker, vClient, store)
+	vm, err := vault_manager.NewVaultManager(c.Unlocker, c.Provisioner, vClient, store)
 	if err != nil {
 		slog.Error("unlocker config", "err", err)
 		os.Exit(1)
@@ -71,7 +71,7 @@ func main() {
 	endChan := make(chan os.Signal, 1)
 	signal.Notify(endChan, syscall.SIGINT, syscall.SIGTERM)
 
-	if err := vm.Unlock(ctx); err != nil {
+	if err := vm.Process(ctx); err != nil {
 		slog.Error("vault manager", "err", err)
 	}
 
@@ -85,7 +85,7 @@ func main() {
 				defer wg.Done()
 				opCtx, cancel := context.WithTimeout(ctx, 50*time.Second)
 				defer cancel()
-				if err := vm.Unlock(opCtx); err != nil {
+				if err := vm.Process(opCtx); err != nil {
 					slog.Error("vault manager", "err", err)
 				}
 			}()

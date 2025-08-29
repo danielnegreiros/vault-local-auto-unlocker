@@ -18,7 +18,14 @@ storage:
   boltdb:
     path: "./tests/vault/data/integration.db"
 
-  provisioner:
-    - type: kv-v2
-      mountPath: something
+provisioner:
+  mounts:
+  - type: kv-v2
+    path: something
+    secrets:
+      - path: abc/def
+        name: secret-name
+        data:
+          k1: v1
+          k2: "*random*"
 

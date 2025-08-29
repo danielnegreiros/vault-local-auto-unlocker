@@ -231,3 +231,108 @@ storage:
 		assert.ErrorContains(t, err, scenario.expectedErr)
 	}
 }
+
+func TestGeneratorConfig(t *testing.T) {
+	scenarios := []struct {
+		name                   string
+		data                   []byte
+		expectedLenMounts      int
+		expectedType           string
+		expectedPath           string
+		expectedLenSecrets     int
+		expectedsecretName1    string
+		expectedSecretPAth2    string
+		expectedLenDataSecret1 int
+		expectedLenDataSecret2 int
+	}{
+		{
+			data: []byte(`
+manager:
+  repeat_interval: 60 # seconds
+  operation_timeout: 50 # seconds
+
+unlocker:
+  number_keys: 3
+  request_timeout: 5
+  # url: http://localhost:8200
+
+encryption:
+  path: "./tests/vault/data/"
+
+storage:
+  type: boltdb
+  kubernetes:
+    access: out-cluster
+    namespace: monitoring
+  boltdb:
+    path: "./tests/vault/data/integration.db"
+
+provisioner:
+  mounts:
+  - type: kv-v2
+    path: somepath
+    secrets:
+      - path: abc/def
+        name: secret-name
+        data:
+          k1: v1
+          k2: v2
+      - path: xxx/yyy
+        name: secret-name2
+        data:
+          k1: v1
+`),
+			name:                   "Happy Provisioner",
+			expectedLenMounts:      1,
+			expectedType:           "kv-v2",
+			expectedPath:           "somepath",
+			expectedLenSecrets:     2,
+			expectedsecretName1:    "secret-name",
+			expectedSecretPAth2:    "xxx/yyy",
+			expectedLenDataSecret1: 2,
+			expectedLenDataSecret2: 1,
+		},
+	}
+
+	for _, scenario := range scenarios {
+
+		cfg, err := conf.NewConfig(scenario.data)
+		assert.NoError(t, err)
+		prov := cfg.Provisioner
+
+		if len(prov.Mount) != scenario.expectedLenMounts {
+			t.Errorf("\n%s: Found: %d, Expected: %d", scenario.name, len(prov.Mount), scenario.expectedLenMounts)
+		}
+
+		mnt := prov.Mount[0]
+		if mnt.Path != scenario.expectedPath {
+			t.Errorf("\n%s: Found: %s, Expected: %s", scenario.name, mnt.Path, scenario.expectedPath)
+		}
+
+		if mnt.Type != scenario.expectedType {
+			t.Errorf("\n%s: Found: %s, Expected: %s", scenario.name, mnt.Type, scenario.expectedType)
+		}
+
+		if len(mnt.Secrets) != scenario.expectedLenSecrets {
+			t.Errorf("\n%s: Found: %d, Expected: %d", scenario.name, len(mnt.Secrets), scenario.expectedLenSecrets)
+		}
+		sec1 := mnt.Secrets[0]
+		sec2 := mnt.Secrets[1]
+
+		if sec1.Name != scenario.expectedsecretName1 {
+			t.Errorf("\n%s: Found: %s, Expected: %s", scenario.name, sec1.Name, scenario.expectedsecretName1)
+		}
+
+		if sec2.Path != scenario.expectedSecretPAth2 {
+			t.Errorf("\n%s: Found: %s, Expected: %s", scenario.name, sec2.Path, scenario.expectedSecretPAth2)
+		}
+
+		if len(sec1.Data) != scenario.expectedLenDataSecret1 {
+			t.Errorf("\n%s: Found: %d, Expected: %d", scenario.name, len(sec1.Data), scenario.expectedLenDataSecret1)
+		}
+		if len(sec2.Data) != scenario.expectedLenDataSecret2 {
+			t.Errorf("\n%s: Found: %d, Expected: %d", scenario.name, len(sec2.Data), scenario.expectedLenDataSecret2)
+		}
+
+	}
+}

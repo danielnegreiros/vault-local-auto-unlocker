@@ -53,12 +53,14 @@ profile: ## Run benchmarks with profiling
 			go test -bench=. -benchmem -cpuprofile $$pkg.cpu.prof -memprofile $$pkg.mem.prof $$pkg; \
 	done
 
-integration:
+unit_test_setup: ## Run this to be ale to run unittest
 	podman stop vault-new  > /dev/null 2>&1 || true
 	podman rm vault-new  > /dev/null 2>&1 || true
 	rm -rf tests/vault/data
 	mkdir -p tests/vault/data
 	cd tests/vault/ && podman-compose up -d && cd -
+
+integration: unit_test_setup ## sem integration tests
 	go run main.go
 	# podman stop vault-new  > /dev/null 2>&1 || true
 	# podman rm vault-new  > /dev/null 2>&1 || true

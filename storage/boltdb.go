@@ -62,6 +62,7 @@ var bucketsName = []string{"users", "keys"}
 
 func (b *BoltBDStorage) InsertKeyValue(table string, key string, data string) error {
 	return b.db.Update(func(tx *bbolt.Tx) error {
+		slog.Info("insert key in boldtd", "table", table, "key", key)
 		b := tx.Bucket([]byte(table))
 		return b.Put([]byte(key), []byte(data))
 	})

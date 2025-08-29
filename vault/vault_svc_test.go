@@ -2,6 +2,8 @@ package vault_manager
 
 import (
 	"context"
+	"log/slog"
+	"reflect"
 	"testing"
 	"vault-unlocker/conf"
 	"vault-unlocker/storage"
@@ -9,158 +11,61 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSomething(t *testing.T) {
-	var data = []byte(`
-unlocker:
-  number_keys: 2
-  url: http://localhost:8200
-storage:
-  type: boltdb
-  boltdb:
-    path: ../temp/bolt.db
-`)
-
-	appCfg, err := conf.NewConfig(data)
-	assert.NoError(t, err)
-
-	store, err := storage.NewBoltDBStorage(appCfg.Storage.BoltDB)
-	assert.NoError(t, err)
-
-	vmock := &vaultClientMock{}
-
-	ctx := context.Background()
-	vm, err := NewVaultManager(appCfg.Unlocker, vmock, store)
-	assert.NoError(t, err)
-
-	_, err = vm.isInitialized(ctx)
-	assert.ErrorContains(t, err, "unimplemented")
+type VaultManagerTest struct {
+	vaultManager
+	token string
 }
 
-// func TestIsInitialized(t *testing.T) {
+func setup(data []byte) (*vaultManager, error) {
+	appCfg, err := conf.NewConfig(data)
+	if err != nil {
+		return nil, err
+	}
 
-// 	var data = []byte(`
-// unlocker:
-//   number_keys: 2
-//   url: http://localhost:8200
-// `)
+	client, err := NewVaultClient(appCfg.Unlocker)
+	if err != nil {
+		return nil, err
+	}
+	store, err := storage.NewBoltDBStorage(appCfg.Storage.BoltDB)
+	if err != nil {
+		return nil, err
+	}
 
-// 	appCfg, err := conf.NewConfig(data)
-// 	assert.NoError(t, err)
+	vm, err := NewVaultManager(appCfg.Unlocker, appCfg.Provisioner, client, store)
+	if err != nil {
+		return nil, err
+	}
+	return vm, nil
 
-// 	ctx := context.Background()
-// 	vm, err := NewVault(appCfg.Unlocker, nil)
-// 	assert.NoError(t, err)
+}
 
-// 	res, err := vm.isInitialized(ctx)
-// 	assert.NoError(t, err)
-// 	assert.Equal(t, 2, vm.accessKeysNum)
+func setUpWithoutToken(data []byte) (*VaultManagerTest, error) {
 
-// 	log.Println(res)
+	appCfg, err := conf.NewConfig(data)
+	if err != nil {
+		return nil, err
+	}
 
-// }
+	client, err := NewVaultClient(appCfg.Unlocker)
+	if err != nil {
+		return nil, err
+	}
+	store, err := storage.NewBoltDBStorage(appCfg.Storage.BoltDB)
+	if err != nil {
+		return nil, err
+	}
 
-// func TestInit(t *testing.T) {
+	token, err := store.RetrieveKey("keys", "token")
+	if err != nil {
+		return nil, err
+	}
+	vm, err := NewVaultManager(appCfg.Unlocker, nil, client, store)
+	if err != nil {
+		return nil, err
+	}
+	return &VaultManagerTest{vaultManager: *vm, token: token}, nil
 
-// 	var data = []byte(`
-// unlocker:
-//   number_keys: 3
-//   url: http://localhost:8200
-// `)
-
-// 	appCfg, err := conf.NewConfig(data)
-// 	assert.NoError(t, err)
-
-// 	ctx := context.Background()
-// 	vm, err := NewVault(appCfg.Unlocker, nil)
-// 	assert.NoError(t, err)
-
-// 	resp, err := vm.init(ctx)
-// 	assert.NotNil(t, resp)
-// 	assert.NoError(t, err)
-
-// }
-
-// func TestIsSeal(t *testing.T) {
-
-// 	var data = []byte(`
-// unlocker:
-//   number_keys: 3
-//   url: http://localhost:8200
-// `)
-
-// 	appCfg, err := conf.NewConfig(data)
-// 	assert.NoError(t, err)
-
-// 	ctx := context.Background()
-// 	vm, err := NewVault(appCfg.Unlocker, nil)
-// 	assert.NoError(t, err)
-
-// 	res, err := vm.isSealed(ctx)
-// 	assert.NoError(t, err)
-
-// 	log.Println(res)
-
-// }
-
-// func TestCreateUser(t *testing.T) {
-
-// 	var data = []byte(`
-// unlocker:
-//   number_keys: 3
-//   url: http://localhost:8200
-// `)
-
-// 	appCfg, err := conf.NewConfig(data)
-// 	assert.NoError(t, err)
-
-// 	ctx := context.Background()
-// 	vm, err := NewVault(appCfg.Unlocker, nil)
-// 	assert.NoError(t, err)
-
-// 	err = vm.createUserPass(ctx, "token")
-// 	assert.NoError(t, err)
-
-// }
-
-// func TestEnableKV(t *testing.T) {
-
-// 	var data = []byte(`
-// unlocker:
-//   number_keys: 3
-//   url: http://localhost:8200
-// `)
-
-// 	appCfg, err := conf.NewConfig(data)
-// 	assert.NoError(t, err)
-
-// 	ctx := context.Background()
-// 	vm, err := NewVault(appCfg.Unlocker, nil)
-// 	assert.NoError(t, err)
-
-// 	err = vm.enableKV(ctx, "token")
-// 	assert.NoError(t, err)
-
-// }
-
-// func TestAddToKV(t *testing.T) {
-
-// 	var data = []byte(`
-// unlocker:
-//   number_keys: 3
-//   url: http://localhost:8200
-// `)
-
-// 	appCfg, err := conf.NewConfig(data)
-// 	assert.NoError(t, err)
-
-// 	ctx := context.Background()
-// 	vm, err := NewVault(appCfg.Unlocker, nil)
-// 	assert.NoError(t, err)
-
-// 	err = vm.addKVtoSecret(ctx, "token", "das", "def")
-// 	assert.NoError(t, err)
-
-// }
+}
 
 func TestAddPUserPolicy(t *testing.T) {
 
@@ -171,7 +76,7 @@ unlocker:
 storage:
   type: boltdb
   boltdb:
-    path: ../temp/bolt.db
+    path: ../tests/vault/data/integration.db
 `)
 
 	policy := `
@@ -180,17 +85,214 @@ path "unlocker/data/keys" {
 }
 `
 
-	appCfg, err := conf.NewConfig(data)
-	assert.NoError(t, err)
-
-	client, err := NewVaultClient(appCfg.Unlocker)
-	assert.NoError(t, err)
-
-	vm, err := NewVaultManager(appCfg.Unlocker, client, nil)
+	vmt, err := setUpWithoutToken(data)
 	assert.NoError(t, err)
 
 	ctx := context.Background()
-	err = vm.createPolicy(ctx, "unlocker", policy, "<token>")
+	err = vmt.createPolicy(ctx, "unlocker", policy, vmt.token)
 	assert.NoError(t, err)
 
+}
+
+func TestSecretSecret(t *testing.T) {
+
+	var data = []byte(`
+manager:
+  repeat_interval: 60 # seconds
+  operation_timeout: 50 # seconds
+
+unlocker:
+  number_keys: 3
+  request_timeout: 5
+  # url: http://localhost:8200
+
+encryption:
+  path: "./tests/vault/data/"
+
+storage:
+  type: boltdb
+  kubernetes:
+    access: out-cluster
+    namespace: monitoring
+  boltdb:
+    path: "../tests/vault/data/integration.db"
+
+provisioner:
+  mounts:
+  - type: kv-v2
+    path: something
+    secrets:
+      - path: abc/def
+        name: secret-name
+        data:
+          k1: v1
+          k2: "*random*"
+      - path: xxx/yyy
+        name: secret-name
+        data:
+          k1: v1
+          k2: v2
+`)
+
+	vm, err := setup(data)
+	assert.NoError(t, err)
+
+	token, err := vm.storage.RetrieveKey("keys", "token")
+	assert.NoError(t, err)
+
+	slog.Info("making it easier for manual checking on localhost:8200", "token", token)
+	ctx := context.Background()
+
+	err = vm.provisioningSecrets(ctx)
+	assert.NoError(t, err)
+
+}
+
+func TestSecretNoSecret(t *testing.T) {
+
+	var data = []byte(`
+manager:
+  repeat_interval: 60 # seconds
+  operation_timeout: 50 # seconds
+
+unlocker:
+  number_keys: 3
+  request_timeout: 5
+  # url: http://localhost:8200
+
+encryption:
+  path: "./tests/vault/data/"
+
+storage:
+  type: boltdb
+  kubernetes:
+    access: out-cluster
+    namespace: monitoring
+  boltdb:
+    path: "../tests/vault/data/integration.db"
+
+`)
+
+	vm, err := setup(data)
+	assert.NoError(t, err)
+
+	token, err := vm.storage.RetrieveKey("keys", "token")
+	assert.NoError(t, err)
+
+	slog.Info("making it easier for manual checking on localhost:8200", "token", token)
+	ctx := context.Background()
+
+	err = vm.provisioningSecrets(ctx)
+	assert.NoError(t, err)
+
+}
+
+func TestRandomize(t *testing.T) {
+	// Test case 1: Empty map
+	t.Run("Empty map", func(t *testing.T) {
+		input := map[string]interface{}{}
+		result := randomize(input, 32)
+		if len(result) != 0 {
+			t.Errorf("Expected empty map, got %v", result)
+		}
+	})
+
+	// Test case 2: Map with no "*random*" values
+	t.Run("No random values", func(t *testing.T) {
+		input := map[string]interface{}{
+			"key1": "value1",
+			"key2": 42,
+			"key3": true,
+		}
+		result := randomize(input, 32)
+		if !reflect.DeepEqual(result, input) {
+			t.Errorf("Expected unchanged map %v, got %v", input, result)
+		}
+	})
+
+	// Test case 3: Map with "*random*" values
+	t.Run("With random values", func(t *testing.T) {
+		input := map[string]interface{}{
+			"key1": "value1",
+			"key2": "*random*",
+			"key3": 42,
+		}
+		result := randomize(input, 32)
+
+		// Check that the structure is preserved
+		if len(result) != len(input) {
+			t.Errorf("Expected map of length %d, got %d", len(input), len(result))
+		}
+
+		// Check that non-random values are unchanged
+		if result["key1"] != "value1" || result["key3"] != 42 {
+			t.Errorf("Non-random values were changed unexpectedly")
+		}
+
+		// Check that random value was replaced with a 16-char string
+		randomVal, ok := result["key2"].(string)
+		if !ok {
+			t.Errorf("Expected string for key2, got %T", result["key2"])
+		}
+		if randomVal == "*random*" {
+			t.Errorf("Value for key2 was not randomized")
+		}
+		if len(randomVal) != 16 {
+			t.Errorf("Expected random string of length 16, got length %d", len(randomVal))
+		}
+	})
+
+	// Test case 4: Nested maps
+	t.Run("Nested maps", func(t *testing.T) {
+		input := map[string]interface{}{
+			"key1": "value1",
+			"nested": map[string]interface{}{
+				"nestedKey1": "*random*",
+				"nestedKey2": "keep",
+			},
+		}
+		result := randomize(input, 32)
+
+		// Check top level
+		if result["key1"] != "value1" {
+			t.Errorf("Expected key1=value1, got key1=%v", result["key1"])
+		}
+
+		// Check nested map
+		nestedResult, ok := result["nested"].(map[string]interface{})
+		if !ok {
+			t.Errorf("Expected nested map, got %T", result["nested"])
+			return
+		}
+
+		// Check nested values
+		if nestedResult["nestedKey2"] != "keep" {
+			t.Errorf("Expected nestedKey2=keep, got nestedKey2=%v", nestedResult["nestedKey2"])
+		}
+
+		randomVal, ok := nestedResult["nestedKey1"].(string)
+		if !ok {
+			t.Errorf("Expected string for nestedKey1, got %T", nestedResult["nestedKey1"])
+		}
+		if randomVal == "*random*" {
+			t.Errorf("Value for nestedKey1 was not randomized")
+		}
+		if len(randomVal) != 16 {
+			t.Errorf("Expected random string of length 16, got length %d", len(randomVal))
+		}
+	})
+
+	// Test case 5: Multiple calls should produce different random values
+	t.Run("Random values differ between calls", func(t *testing.T) {
+		input := map[string]interface{}{"key": "*random*"}
+		result1 := randomize(input, 32)
+		result2 := randomize(input, 32)
+
+		val1, _ := result1["key"].(string)
+		val2, _ := result2["key"].(string)
+
+		if val1 == val2 {
+			t.Errorf("Expected different random values, but got the same value: %s", val1)
+		}
+	})
 }

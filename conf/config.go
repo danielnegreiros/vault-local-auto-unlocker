@@ -22,9 +22,26 @@ const (
 )
 
 type config struct {
-	Unlocker   *Unlocker   `yaml:"unlocker"`
-	Encryption *Encryption `yaml:"encryption"`
-	Storage    *Storage    `yaml:"storage"`
+	Provisioner *Provisioner `yaml:"provisioner"`
+	Unlocker    *Unlocker    `yaml:"unlocker"`
+	Encryption  *Encryption  `yaml:"encryption"`
+	Storage     *Storage     `yaml:"storage"`
+}
+
+type Provisioner struct {
+	Mount []Mount `yaml:"mounts"`
+}
+
+type Mount struct {
+	Type    string    `yaml:"type"`
+	Path    string    `yaml:"path"`
+	Secrets []Secrets `yaml:"secrets"`
+}
+
+type Secrets struct {
+	Path string                 `yaml:"path"`
+	Name string                 `yaml:"name"`
+	Data map[string]interface{} `yaml:"data"`
 }
 
 type Unlocker struct {
