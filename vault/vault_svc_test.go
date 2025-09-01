@@ -143,7 +143,7 @@ provisioner:
 	slog.Info("making it easier for manual checking on localhost:8200", "token", token)
 	ctx := context.Background()
 
-	err = vm.provisioningSecrets(ctx)
+	err = vm.provisionSecrets(ctx)
 	assert.NoError(t, err)
 
 }
@@ -186,7 +186,7 @@ provisioner:
 	slog.Info("making it easier for manual checking on localhost:8200", "token", token)
 	ctx := context.Background()
 
-	err = vm.provisioningSecrets(ctx)
+	err = vm.provisionSecrets(ctx)
 	assert.NoError(t, err)
 
 }
@@ -225,7 +225,7 @@ storage:
 	slog.Info("making it easier for manual checking on localhost:8200", "token", token)
 	ctx := context.Background()
 
-	err = vm.provisioningSecrets(ctx)
+	err = vm.provisionSecrets(ctx)
 	assert.NoError(t, err)
 
 }

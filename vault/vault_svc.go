@@ -42,13 +42,13 @@ func NewVaultManager(cfg *conf.Unlocker, prov *conf.Provisioner, vClient ivault,
 	}, nil
 }
 
-func (v *vaultManager) Process(ctx context.Context) error {
+func (v *vaultManager) Run(ctx context.Context) error {
 
 	if err := v.unlock(ctx); err != nil {
 		return err
 	}
 
-	if err := v.provisioningSecrets(ctx); err != nil {
+	if err := v.provisionSecrets(ctx); err != nil {
 		return err
 	}
 
@@ -59,7 +59,7 @@ func (v *vaultManager) unlock(ctx context.Context) error {
 
 	isInit, err := v.isInitialized(ctx)
 	if err != nil {
-		return fmt.Errorf("is vault unlock: [%w]", err)
+		return fmt.Errorf("checking if vault is initialized: [%w]", err)
 	}
 
 	var dataKeys map[string]interface{}
@@ -100,17 +100,17 @@ func (v *vaultManager) unlock(ctx context.Context) error {
 			return fmt.Errorf("unseal: [%w]", err)
 		}
 
-		err = v.enableUserPass(ctx, authType, token)
+		err = v.enableUserPassAuth(ctx, authType, token)
 		if err != nil {
 			return fmt.Errorf("unlock: [%w]", err)
 		}
 
-		_, err = v.enableKV(ctx, kvPath, kvType, token)
+		_, err = v.mountKvEnginePath(ctx, kvPath, kvType, token)
 		if err != nil {
 			return fmt.Errorf("enable kv: (%s, %s) [%w]", kvPath, kvType, err)
 		}
 
-		err = v.addKVtoSecret(ctx, kvKey, kvPath, dataKeys, token)
+		err = v.upsertKvV2Secret(ctx, kvKey, kvPath, dataKeys, token)
 		if err != nil {
 			return fmt.Errorf("add kv to secret: (%s, %s) [%w]", kvKey, kvPath, err)
 		}
@@ -124,7 +124,7 @@ path "unlocker/metadata/*" { capabilities = [ "read", "list" ]}
 			return fmt.Errorf("create policy: (%s) [%w]", policy, err)
 		}
 
-		err = v.createUserPass(ctx, userPassUser, userPassPass, userPolicyName, token)
+		err = v.createUserPassAuthUser(ctx, userPassUser, userPassPass, userPolicyName, token)
 		if err != nil {
 			return fmt.Errorf("create user pass: [%w]", err)
 		}
@@ -134,11 +134,11 @@ path "unlocker/metadata/*" { capabilities = [ "read", "list" ]}
 
 	sealed, err := v.isSealed(ctx)
 	if err != nil {
-		return fmt.Errorf("unlock is unseal: [%w]", err)
+		return fmt.Errorf("checking if vailt is unseald: [%w]", err)
 	}
 
 	if !sealed {
-		slog.Info("vault unsealed")
+		slog.Info("vault is already unsealed")
 		return nil
 	}
 
@@ -161,7 +161,7 @@ path "unlocker/metadata/*" { capabilities = [ "read", "list" ]}
 	return nil
 }
 
-func (v *vaultManager) provisioningSecrets(ctx context.Context) error {
+func (v *vaultManager) provisionSecrets(ctx context.Context) error {
 
 	if v.provisioner == nil {
 		slog.Warn("no secrets are going to be provisioned")
@@ -174,7 +174,7 @@ func (v *vaultManager) provisioningSecrets(ctx context.Context) error {
 	}
 
 	for _, mountPath := range v.provisioner.Mount {
-		_, err := v.enableKV(ctx, mountPath.Path, mountPath.Type, token)
+		_, err := v.mountKvEnginePath(ctx, mountPath.Path, mountPath.Type, token)
 
 		if err != nil && !strings.Contains(err.Error(), "400 Bad") {
 			slog.Error("error mount secret engine", "type", mountPath.Type, "path", mountPath.Path, "error", err)
@@ -182,25 +182,25 @@ func (v *vaultManager) provisioningSecrets(ctx context.Context) error {
 		}
 
 		for _, secret := range mountPath.Secrets {
-			fullPath, err := url.JoinPath(secret.Path, secret.Name)
+			secretPathName, err := url.JoinPath(secret.Path, secret.Name)
 			if err != nil {
 				slog.Error("error manipulating secret path", "mount", mountPath.Path, "path", secret.Path, "secret", secret.Name, "err", err)
 				continue
 			}
 
-			err = v.IsKVSecretExistent(ctx, mountPath.Path, fullPath, token)
+			err = v.IsKVSecretExistent(ctx, mountPath.Path, secretPathName, token)
 			if err == nil {
-				slog.Info("secret already exists, continuing....", "mount", mountPath.Path, "secret", fullPath)
+				slog.Info("secret already exists, continuing....", "mount", mountPath.Path, "secret", secretPathName)
 				continue
 			}
 
 			if strings.Contains(err.Error(), "404") {
-				err = v.addKVtoSecret(ctx, fullPath, mountPath.Path, randomize(secret.Data, 32), token)
+				err = v.upsertKvV2Secret(ctx, secretPathName, mountPath.Path, randomize(secret.Data, 32), token)
 				if err != nil {
 					slog.Error("error when adding secret", "mount", mountPath.Path, "path", secret.Path, "secret", secret.Name, "error", err)
 				}
 			} else {
-				slog.Info("not possible to check if secret exists", "mount", mountPath, "secret", fullPath)
+				slog.Info("not possible to check if secret exists", "mount", mountPath, "secret", secretPathName)
 				return err
 			}
 		}

@@ -71,7 +71,7 @@ func main() {
 	endChan := make(chan os.Signal, 1)
 	signal.Notify(endChan, syscall.SIGINT, syscall.SIGTERM)
 
-	if err := vm.Process(ctx); err != nil {
+	if err := vm.Run(ctx); err != nil {
 		slog.Error("vault manager", "err", err)
 	}
 
@@ -85,7 +85,7 @@ func main() {
 				defer wg.Done()
 				opCtx, cancel := context.WithTimeout(ctx, 50*time.Second)
 				defer cancel()
-				if err := vm.Process(opCtx); err != nil {
+				if err := vm.Run(opCtx); err != nil {
 					slog.Error("vault manager", "err", err)
 				}
 			}()
