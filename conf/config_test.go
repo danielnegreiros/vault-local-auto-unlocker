@@ -336,3 +336,143 @@ provisioner:
 
 	}
 }
+
+func TestAppRoleConfig(t *testing.T) {
+	scenarios := []struct {
+		name                             string
+		data                             []byte
+		expectedLenApproles              int
+		expectedLenPolicies              int
+		expectedFirstAppRoleName         string
+		expectedFirstPolicyName          string
+		expectedFirstAppRoleSecretTTL    int
+		expectedFirstAppRoleTokenTTL     int
+		expectedFirstAppRoleTokenMaxTTL  int
+		expectedFirstAppRolenLenPolicies int
+		// expectedType           string
+		// expectedPath           string
+		// expectedLenSecrets     int
+		// expectedsecretName1    string
+		// expectedSecretPAth2    string
+		// expectedLenDataSecret1 int
+		// expectedLenDataSecret2 int
+	}{
+		{
+			data: []byte(`
+manager:
+  repeat_interval: 60 # seconds
+  operation_timeout: 50 # seconds
+
+unlocker:
+  number_keys: 3
+  request_timeout: 5
+  # url: http://localhost:8200
+
+encryption:
+  path: "./tests/vault/data/"
+
+storage:
+  type: boltdb
+  kubernetes:
+    access: out-cluster
+    namespace: monitoring
+  boltdb:
+    path: "./tests/vault/data/integration.db"
+
+provisioner:
+  policies:
+    - name: external-secret-operator
+      rules: |
+        path "cluster/metadata/*" {
+          capabilities = ["read"," list"]
+        }
+        path "cluster/data/*" {
+          capabilities = ["read"," list"]
+        }
+    - name: external-secret-operator-2
+      rules: |
+        path "cluster/metadata/*" {
+          capabilities = ["read"," list"]
+        }
+        path "cluster/data/*" {
+          capabilities = ["read"," list"]
+        }
+
+  approles:
+  - name: external-secret-operator
+    policies:
+      - external-secret-operator-policy
+      - my-sec-policy
+    secret_id_ttl: 0
+    token_ttl: 3600
+    token_max_ttl: 7200
+  - name: external-secret-operator-2
+    policies:
+      - external-secret-operator-policy
+    secret_id_ttl: 0
+    token_ttl: 3600
+    token_max_ttl: 7200
+  - name: external-secret-operator-3
+    policies:
+      - external-secret-operator-policy
+    secret_id_ttl: 0
+    token_ttl: 3600
+    token_max_ttl: 7200
+`),
+			name:                             "Happy Provisioner",
+			expectedLenApproles:              3,
+			expectedLenPolicies:              2,
+			expectedFirstAppRoleName:         "external-secret-operator",
+			expectedFirstPolicyName:          "external-secret-operator",
+			expectedFirstAppRoleSecretTTL:    0,
+			expectedFirstAppRoleTokenTTL:     3600,
+			expectedFirstAppRoleTokenMaxTTL:  7200,
+			expectedFirstAppRolenLenPolicies: 2,
+		},
+	}
+
+	for _, scenario := range scenarios {
+
+		cfg, err := conf.NewConfig(scenario.data)
+		assert.NoError(t, err)
+		prov := cfg.Provisioner
+
+		if len(prov.Policies) != scenario.expectedLenPolicies {
+			t.Errorf("\n%s: Found: %d, Expected: %d", scenario.name, len(prov.Policies), scenario.expectedLenPolicies)
+		}
+
+		if len(prov.AppRoles) != scenario.expectedLenApproles {
+			t.Errorf("\n%s: Found: %d, Expected: %d", scenario.name, len(prov.AppRoles), scenario.expectedLenApproles)
+		}
+
+		appRole1 := prov.AppRoles[0]
+		if appRole1.Name != scenario.expectedFirstAppRoleName {
+			t.Errorf("\n%s: Found: %s, Expected: %s", scenario.name, appRole1.Name, scenario.expectedFirstAppRoleName)
+		}
+
+		policyName := prov.Policies[0].Name
+		if policyName != scenario.expectedFirstPolicyName {
+			t.Errorf("\n%s: Found: %s, Expected: %s", scenario.name, policyName, scenario.expectedFirstPolicyName)
+		}
+
+		if appRole1.SecretIdTTL != scenario.expectedFirstAppRoleSecretTTL {
+			t.Errorf("\n%s: Found: %d, Expected: %d", scenario.name, appRole1.SecretIdTTL, scenario.expectedFirstAppRoleSecretTTL)
+		}
+
+		if appRole1.TokenTTL != scenario.expectedFirstAppRoleTokenTTL {
+			t.Errorf("\n%s: Found: %d, Expected: %d", scenario.name, appRole1.TokenTTL, scenario.expectedFirstAppRoleTokenTTL)
+		}
+
+		if appRole1.TokenMaxTTL != scenario.expectedFirstAppRoleTokenMaxTTL {
+			t.Errorf("\n%s: Found: %d, Expected: %d", scenario.name, appRole1.TokenMaxTTL, scenario.expectedFirstAppRoleTokenMaxTTL)
+		}
+
+		if len(appRole1.PolicyNames) != scenario.expectedFirstAppRolenLenPolicies {
+			t.Errorf("\n%s: Found: %d, Expected: %d", scenario.name, len(appRole1.PolicyNames), scenario.expectedFirstAppRolenLenPolicies)
+		}
+
+		for _, p := range prov.Policies {
+			assert.NotEmpty(t, p.Rules)
+		}
+	}
+}

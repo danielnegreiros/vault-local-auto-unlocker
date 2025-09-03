@@ -29,7 +29,22 @@ type config struct {
 }
 
 type Provisioner struct {
-	Mount []Mount `yaml:"mounts"`
+	Mount    []Mount   `yaml:"mounts"`
+	Policies []Policy  `yaml:"policies"`
+	AppRoles []AppRole `yaml:"approles"`
+}
+
+type AppRole struct {
+	Name        string   `yaml:"name"`
+	PolicyNames []string `yaml:"policies"`
+	SecretIdTTL int      `yaml:"secret_id_ttl"`
+	TokenTTL    int      `yaml:"token_ttl"`
+	TokenMaxTTL int      `yaml:"token_max_ttl"`
+}
+
+type Policy struct {
+	Name  string `yaml:"name"`
+	Rules string `yaml:"rules"`
 }
 
 type Mount struct {

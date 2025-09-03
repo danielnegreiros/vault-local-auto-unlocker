@@ -21,11 +21,30 @@ storage:
 provisioner:
   mounts:
   - type: kv-v2
-    path: something
+    path: cluster
     secrets:
-      - path: abc/def
+      - path: smoke/test
         name: secret-name
         data:
           k1: v1
           k2: "*random*"
+
+  policies:
+    - name: external-secret-operator
+      rules: |
+        path "cluster/metadata/*" {
+          capabilities = ["read"," list"]
+        }
+        path "cluster/data/*" {
+          capabilities = ["read"," list"]
+        }
+
+  approles:
+  - name: external-secret-operator
+    policies:
+      - external-secret-operator-policy
+    secret_id_ttl: 0
+    token_ttl: 3600
+    token_max_ttl: 7200
+
 
