@@ -17,6 +17,7 @@ type ivault interface {
 	init(ctx context.Context, accessKeysNum int32) (map[string]interface{}, error)
 	unseal(ctx context.Context, keys []interface{}) error
 	enableAuth(ctx context.Context, type_ string, mountPath string, token string) error
+	ensureAppRoleCreate(ctx context.Context, roleName string, mountPath string, policies []string, token string) (*vault.Response[map[string]interface{}], error)
 	createUserPassAuthUser(ctx context.Context, mountPath string, user string, pass string, policies []string, token string) error
 	mountKvEnginePath(ctx context.Context, path string, engType string, token string) (*vault.Response[map[string]interface{}], error)
 	upsertKvV2Secret(ctx context.Context, secretPath string, mountPath string, data map[string]interface{}, token string) error
@@ -163,4 +164,15 @@ func (v *vaultClient) ensurePolicy(ctx context.Context, policyName string, polic
 	slog.Info("create policy completed", "name", policyName)
 
 	return nil
+}
+
+func (v *vaultClient) ensureAppRoleCreate(ctx context.Context, roleName string, mountPath string, policies []string, token string) (*vault.Response[map[string]interface{}], error) {
+	res, err := v.client.Auth.AppRoleWriteRole(ctx, roleName, schema.AppRoleWriteRoleRequest{
+		SecretIdTtl: "0",
+		TokenTtl:    "0",
+		TokenMaxTtl: "7200",
+	}, vault.WithMountPath(mountPath), vault.WithToken(token))
+
+	slog.Info("approle create with success", "role", roleName, "path", mountPath, "policies", policies)
+	return res, err
 }

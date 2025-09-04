@@ -110,21 +110,31 @@ func (v *vaultManager) ensureAuthEnabled(ctx context.Context, token string) erro
 			return fmt.Errorf("error enabling auth: [%w]", err)
 		}
 
-		if auth.Users == nil {
-			slog.Info("not available user for provisioning", "type", auth.AuthType, "path", auth.Path)
-			continue
-		}
-
 		switch auth.AuthType {
 		case "userpass":
+			if auth.Users == nil {
+				slog.Info("not available user for provisioning", "type", auth.AuthType, "path", auth.Path)
+				continue
+			}
+
 			for _, user := range auth.Users {
 				err := v.createUserPassAuthUser(ctx, auth.Path, user.Name, user.Pass, user.Policies, token)
 				if err != nil {
 					slog.Warn("not possible to create user, continuing...", "user", user.Name, "type", auth.AuthType, "path", auth.Path)
 				}
 			}
+		case "approle":
+			if auth.AppRoles == nil {
+				slog.Info("not available approle for provisioning", "type", auth.AuthType, "path", auth.Path)
+				continue
+			}
+			for _, role := range auth.AppRoles {
+				_, err := v.ensureAppRoleCreate(ctx, role.Name, auth.Path, role.PolicyNames, token)
+				if err != nil {
+					slog.Warn("not possible to create approle, continuing...", "role", role.Name, "type", auth.AuthType, "path", auth.Path)
+				}
+			}
 		}
-
 	}
 
 	return nil
