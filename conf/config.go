@@ -29,9 +29,22 @@ type config struct {
 }
 
 type Provisioner struct {
-	Mount    []Mount   `yaml:"mounts"`
-	Policies []Policy  `yaml:"policies"`
+	Auth     []Auth   `yaml:"auth"`
+	Mount    []Mount  `yaml:"mounts"`
+	Policies []Policy `yaml:"policies"`
+}
+
+type Auth struct {
+	AuthType string    `yaml:"type"`
+	Path     string    `yaml:"path"`
 	AppRoles []AppRole `yaml:"approles"`
+	Users    []User    `yaml:"users"`
+}
+
+type User struct {
+	Name     string   `yaml:"name"`
+	Pass     string   `yaml:"pass"`
+	Policies []string `yaml:"policies"`
 }
 
 type AppRole struct {

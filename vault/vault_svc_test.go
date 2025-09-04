@@ -89,7 +89,7 @@ path "unlocker/data/keys" {
 	assert.NoError(t, err)
 
 	ctx := context.Background()
-	err = vmt.createPolicy(ctx, "unlocker", policy, vmt.token)
+	err = vmt.ensurePolicy(ctx, "unlocker", policy, vmt.token)
 	assert.NoError(t, err)
 
 }
@@ -143,7 +143,7 @@ provisioner:
 	slog.Info("making it easier for manual checking on localhost:8200", "token", token)
 	ctx := context.Background()
 
-	err = vm.provisionSecrets(ctx)
+	err = vm.ensureSecretsProvisioned(ctx, vm.provisioner.Mount[0].Path, vm.provisioner.Mount[0].Secrets, token)
 	assert.NoError(t, err)
 
 }
@@ -186,7 +186,7 @@ provisioner:
 	slog.Info("making it easier for manual checking on localhost:8200", "token", token)
 	ctx := context.Background()
 
-	err = vm.provisionSecrets(ctx)
+	err = vm.ensureSecretsProvisioned(ctx, vm.provisioner.Mount[0].Path, vm.provisioner.Mount[0].Secrets, token)
 	assert.NoError(t, err)
 
 }
@@ -214,6 +214,52 @@ storage:
   boltdb:
     path: "../tests/vault/data/integration.db"
 
+provisioner:
+  policies:
+    - name: unlocker
+      rules: |
+        path "unlocker/data/*" { capabilities = [ "read", "list" ]}
+        path "unlocker/metadata/*" { capabilities = [ "read", "list" ]}
+
+    - name: external-secret-operator
+      rules: |
+        path "cluster/metadata/*" { capabilities = ["read","list"] }
+        path "cluster/data/*" { capabilities = ["read","list"] }
+
+  auth:
+    - type: userpass
+      path: userpass
+      users:
+        - name: unlocker
+          pass: unlocker
+          policies:
+            - unlocker
+
+    - type: kubernetes
+      path: kubernetes
+
+    - type: approle
+      path: approle
+      approles:
+      - name: external-secret-operator
+        policies:
+          - external-secret-operator-policy
+        secret_id_ttl: 0
+        token_ttl: 3600
+        token_max_ttl: 7200
+
+  mounts:
+  - type: kv-v2
+    path: unlocker
+
+  - type: kv-v2
+    path: cluster
+    secrets:
+      - path: smoke/test
+        name: secret-name
+        data:
+          k1: v1
+          k2: "*random*"
 `)
 
 	vm, err := setup(data)
@@ -225,7 +271,7 @@ storage:
 	slog.Info("making it easier for manual checking on localhost:8200", "token", token)
 	ctx := context.Background()
 
-	err = vm.provisionSecrets(ctx)
+	err = vm.ensureSecretsProvisioned(ctx, vm.provisioner.Mount[0].Path, vm.provisioner.Mount[0].Secrets, token)
 	assert.NoError(t, err)
 
 }
@@ -280,8 +326,8 @@ func TestRandomize(t *testing.T) {
 		if randomVal == "*random*" {
 			t.Errorf("Value for key2 was not randomized")
 		}
-		if len(randomVal) != 16 {
-			t.Errorf("Expected random string of length 16, got length %d", len(randomVal))
+		if len(randomVal) != 32 {
+			t.Errorf("Expected random string of length 32, got length %d", len(randomVal))
 		}
 	})
 
@@ -320,7 +366,7 @@ func TestRandomize(t *testing.T) {
 		if randomVal == "*random*" {
 			t.Errorf("Value for nestedKey1 was not randomized")
 		}
-		if len(randomVal) != 16 {
+		if len(randomVal) != 32 {
 			t.Errorf("Expected random string of length 16, got length %d", len(randomVal))
 		}
 	})

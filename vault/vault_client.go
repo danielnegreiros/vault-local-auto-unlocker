@@ -16,12 +16,12 @@ type ivault interface {
 	isInitialized(ctx context.Context) (bool, error)
 	init(ctx context.Context, accessKeysNum int32) (map[string]interface{}, error)
 	unseal(ctx context.Context, keys []interface{}) error
-	enableUserPassAuth(ctx context.Context, type_ string, token string) error
-	createUserPassAuthUser(ctx context.Context, user string, pass string, policy string, token string) error
+	enableAuth(ctx context.Context, type_ string, mountPath string, token string) error
+	createUserPassAuthUser(ctx context.Context, mountPath string, user string, pass string, policies []string, token string) error
 	mountKvEnginePath(ctx context.Context, path string, engType string, token string) (*vault.Response[map[string]interface{}], error)
 	upsertKvV2Secret(ctx context.Context, secretPath string, mountPath string, data map[string]interface{}, token string) error
-	IsKVSecretExistent(ctx context.Context, mountPath string, path string, token string) error
-	createPolicy(ctx context.Context, user string, policy string, token string) error
+	isKVSecretExistent(ctx context.Context, mountPath string, path string, token string) error
+	ensurePolicy(ctx context.Context, policyName string, policy string, token string) error
 }
 
 type vaultClient struct {
@@ -101,24 +101,25 @@ func (v *vaultClient) unseal(ctx context.Context, keys []interface{}) error {
 	return nil
 }
 
-func (v *vaultClient) enableUserPassAuth(ctx context.Context, engType string, token string) error {
-	_, err := v.client.System.AuthEnableMethod(ctx, engType, schema.AuthEnableMethodRequest{Type: engType}, vault.WithToken(token))
+func (v *vaultClient) enableAuth(ctx context.Context, engType string, mountPath string, token string) error {
+	_, err := v.client.System.AuthEnableMethod(ctx, engType, schema.AuthEnableMethodRequest{Type: engType},
+		vault.WithToken(token), vault.WithMountPath(mountPath))
 	if err != nil {
-		return fmt.Errorf("enable userpass [%w]", err)
+		return fmt.Errorf("enable %s [%w]", engType, err)
 	}
-	slog.Info("enable userpass", "operation", "completed")
+	slog.Info("enable auth operation completed", "type", engType, "path", mountPath)
 	return nil
 }
 
-func (v *vaultClient) createUserPassAuthUser(ctx context.Context, user string, pass string, policy string, token string) error {
+func (v *vaultClient) createUserPassAuthUser(ctx context.Context, mountPath string, user string, pass string, policies []string, token string) error {
 	_, err := v.client.Auth.UserpassWriteUser(ctx, user, schema.UserpassWriteUserRequest{
-		Password: pass, TokenPolicies: []string{policy},
-	}, vault.WithToken(token))
+		Password: pass, TokenPolicies: policies,
+	}, vault.WithToken(token), vault.WithMountPath(mountPath))
 
 	if err != nil {
 		return fmt.Errorf("create userpass [%w]", err)
 	}
-	slog.Info("create userpass", "operation", "completed")
+	slog.Info("create userpass operation completed", "user", user, "path", mountPath)
 	return nil
 }
 
@@ -145,21 +146,21 @@ func (v *vaultClient) upsertKvV2Secret(ctx context.Context, secretPath string, m
 	return nil
 }
 
-func (v *vaultClient) IsKVSecretExistent(ctx context.Context, mountPath string, path string, token string) error {
+func (v *vaultClient) isKVSecretExistent(ctx context.Context, mountPath string, path string, token string) error {
 	slog.Info("checking if secret is existent", "mount", mountPath, "path", path)
 	_, err := v.client.Secrets.KvV2Read(ctx, path, vault.WithMountPath(mountPath), vault.WithToken(token))
 	return err
 }
 
-func (v *vaultClient) createPolicy(ctx context.Context, name string, policy string, token string) error {
+func (v *vaultClient) ensurePolicy(ctx context.Context, policyName string, policy string, token string) error {
 
-	_, err := v.client.System.PoliciesWriteAclPolicy(ctx, name, schema.PoliciesWriteAclPolicyRequest{
+	_, err := v.client.System.PoliciesWriteAclPolicy(ctx, policyName, schema.PoliciesWriteAclPolicyRequest{
 		Policy: policy,
 	}, vault.WithToken(token))
 	if err != nil {
 		return fmt.Errorf("create policy: [%w]", err)
 	}
-	slog.Info("create policy completed", "name", name)
+	slog.Info("create policy completed", "name", policyName)
 
 	return nil
 }

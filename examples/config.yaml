@@ -19,7 +19,43 @@ storage:
     path: "./tests/vault/data/integration.db"
 
 provisioner:
+  policies:
+    - name: unlocker
+      rules: |
+        path "unlocker/data/*" { capabilities = [ "read", "list" ]}
+        path "unlocker/metadata/*" { capabilities = [ "read", "list" ]}
+
+    - name: external-secret-operator
+      rules: |
+        path "cluster/metadata/*" { capabilities = ["read","list"] }
+        path "cluster/data/*" { capabilities = ["read","list"] }
+
+  auth:
+    - type: userpass
+      path: userpass
+      users:
+        - name: unlocker
+          pass: unlocker
+          policies:
+            - unlocker
+
+    - type: kubernetes
+      path: kubernetes
+
+    - type: approle
+      path: approle
+      approles:
+      - name: external-secret-operator
+        policies:
+          - external-secret-operator-policy
+        secret_id_ttl: 0
+        token_ttl: 3600
+        token_max_ttl: 7200
+
   mounts:
+  - type: kv-v2
+    path: unlocker
+
   - type: kv-v2
     path: cluster
     secrets:
@@ -28,23 +64,4 @@ provisioner:
         data:
           k1: v1
           k2: "*random*"
-
-  policies:
-    - name: external-secret-operator
-      rules: |
-        path "cluster/metadata/*" {
-          capabilities = ["read"," list"]
-        }
-        path "cluster/data/*" {
-          capabilities = ["read"," list"]
-        }
-
-  approles:
-  - name: external-secret-operator
-    policies:
-      - external-secret-operator-policy
-    secret_id_ttl: 0
-    token_ttl: 3600
-    token_max_ttl: 7200
-
 

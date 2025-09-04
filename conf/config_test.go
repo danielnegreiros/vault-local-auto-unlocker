@@ -391,33 +391,31 @@ provisioner:
         }
     - name: external-secret-operator-2
       rules: |
-        path "cluster/metadata/*" {
-          capabilities = ["read"," list"]
-        }
-        path "cluster/data/*" {
-          capabilities = ["read"," list"]
-        }
-
-  approles:
-  - name: external-secret-operator
-    policies:
-      - external-secret-operator-policy
-      - my-sec-policy
-    secret_id_ttl: 0
-    token_ttl: 3600
-    token_max_ttl: 7200
-  - name: external-secret-operator-2
-    policies:
-      - external-secret-operator-policy
-    secret_id_ttl: 0
-    token_ttl: 3600
-    token_max_ttl: 7200
-  - name: external-secret-operator-3
-    policies:
-      - external-secret-operator-policy
-    secret_id_ttl: 0
-    token_ttl: 3600
-    token_max_ttl: 7200
+        path "cluster/metadata/*" { capabilities = ["read"," list"] }
+        path "cluster/data/*" { capabilities = ["read"," list"] }
+  auth:
+  - type: approle
+    path: approle
+    approles:
+    - name: external-secret-operator
+      policies:
+        - external-secret-operator-policy
+        - my-sec-policy
+      secret_id_ttl: 0
+      token_ttl: 3600
+      token_max_ttl: 7200
+    - name: external-secret-operator-2
+      policies:
+        - external-secret-operator-policy
+      secret_id_ttl: 0
+      token_ttl: 3600
+      token_max_ttl: 7200
+    - name: external-secret-operator-3
+      policies:
+        - external-secret-operator-policy
+      secret_id_ttl: 0
+      token_ttl: 3600
+      token_max_ttl: 7200
 `),
 			name:                             "Happy Provisioner",
 			expectedLenApproles:              3,
@@ -441,11 +439,12 @@ provisioner:
 			t.Errorf("\n%s: Found: %d, Expected: %d", scenario.name, len(prov.Policies), scenario.expectedLenPolicies)
 		}
 
-		if len(prov.AppRoles) != scenario.expectedLenApproles {
-			t.Errorf("\n%s: Found: %d, Expected: %d", scenario.name, len(prov.AppRoles), scenario.expectedLenApproles)
+		approles := prov.Auth[0].AppRoles
+		if len(approles) != scenario.expectedLenApproles {
+			t.Errorf("\n%s: Found: %d, Expected: %d", scenario.name, len(approles), scenario.expectedLenApproles)
 		}
 
-		appRole1 := prov.AppRoles[0]
+		appRole1 := approles[0]
 		if appRole1.Name != scenario.expectedFirstAppRoleName {
 			t.Errorf("\n%s: Found: %s, Expected: %s", scenario.name, appRole1.Name, scenario.expectedFirstAppRoleName)
 		}

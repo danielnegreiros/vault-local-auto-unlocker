@@ -18,12 +18,6 @@ const (
 	kvKey  = "keys"
 	kvPath = "unlocker"
 	kvType = "kv-v2"
-
-	userPassUser   = "unlocker"
-	userPassPass   = "unlocker"
-	userPolicyName = "unlocker"
-
-	authType = "userpass"
 )
 
 type vaultManager struct {
@@ -44,22 +38,119 @@ func NewVaultManager(cfg *conf.Unlocker, prov *conf.Provisioner, vClient ivault,
 
 func (v *vaultManager) Run(ctx context.Context) error {
 
-	if err := v.unlock(ctx); err != nil {
+	dataKeys, err := v.unlock(ctx)
+	if err != nil {
 		return err
 	}
 
-	if err := v.provisionSecrets(ctx); err != nil {
+	token, err := v.storage.RetrieveKey("keys", "token")
+	if err != nil {
+		return fmt.Errorf("get secrets error: [%w]", err)
+	}
+
+	if err := v.ensurePoliciesProvisioned(ctx, token); err != nil {
 		return err
+	}
+
+	if err := v.ensureAuthEnabled(ctx, token); err != nil {
+		return err
+	}
+
+	if err := v.ensureSecretEngineMounts(ctx, token); err != nil {
+		return err
+	}
+
+	if dataKeys != nil {
+		err = v.upsertKvV2Secret(ctx, kvKey, kvPath, dataKeys, token)
+		if err != nil {
+			return fmt.Errorf("add kv to secret: (%s, %s) [%w]", kvKey, kvPath, err)
+		}
 	}
 
 	return nil
 }
 
-func (v *vaultManager) unlock(ctx context.Context) error {
+func (v *vaultManager) ensureSecretEngineMounts(ctx context.Context, token string) error {
+	if v.provisioner == nil || v.provisioner.Mount == nil {
+		slog.Warn("no auth are going to be enabled")
+		return nil
+	}
+
+	for _, mount := range v.provisioner.Mount {
+
+		switch mount.Type {
+		case "kv-v2":
+			_, err := v.mountKvEnginePath(ctx, mount.Path, mount.Type, token)
+			if err != nil && !strings.Contains(err.Error(), "400 Bad") {
+				return fmt.Errorf("enable kv: (%s, %s) [%w]", mount.Path, mount.Type, err)
+			}
+
+			if err := v.ensureSecretsProvisioned(ctx, mount.Path, mount.Secrets, token); err != nil {
+				slog.Error("Not possible to provision all secrets, continuing ...", "err", err)
+			}
+
+		default:
+			slog.Warn("Secret Engine type not implemeneted or found", "type", mount.Type)
+		}
+
+	}
+
+	return nil
+}
+
+func (v *vaultManager) ensureAuthEnabled(ctx context.Context, token string) error {
+	if v.provisioner == nil || v.provisioner.Auth == nil {
+		slog.Warn("no auth are going to be enabled")
+		return nil
+	}
+
+	for _, auth := range v.provisioner.Auth {
+		err := v.enableAuth(ctx, auth.AuthType, auth.Path, token)
+		if err != nil && !strings.Contains(err.Error(), "400 Bad") {
+			return fmt.Errorf("error enabling auth: [%w]", err)
+		}
+
+		if auth.Users == nil {
+			slog.Info("not available user for provisioning", "type", auth.AuthType, "path", auth.Path)
+			continue
+		}
+
+		switch auth.AuthType {
+		case "userpass":
+			for _, user := range auth.Users {
+				err := v.createUserPassAuthUser(ctx, auth.Path, user.Name, user.Pass, user.Policies, token)
+				if err != nil {
+					slog.Warn("not possible to create user, continuing...", "user", user.Name, "type", auth.AuthType, "path", auth.Path)
+				}
+			}
+		}
+
+	}
+
+	return nil
+}
+
+func (v *vaultManager) ensurePoliciesProvisioned(ctx context.Context, token string) error {
+	if v.provisioner == nil || v.provisioner.Policies == nil {
+		slog.Warn("no policies are going to be provisioned")
+		return nil
+	}
+
+	for _, policy := range v.provisioner.Policies {
+		err := v.ensurePolicy(ctx, policy.Name, policy.Rules, token)
+		if err != nil {
+			return fmt.Errorf("create policy: (%s) [%w]", policy, err)
+		}
+	}
+
+	return nil
+}
+
+func (v *vaultManager) unlock(ctx context.Context) (map[string]interface{}, error) {
 
 	isInit, err := v.isInitialized(ctx)
 	if err != nil {
-		return fmt.Errorf("checking if vault is initialized: [%w]", err)
+		return nil, fmt.Errorf("checking if vault is initialized: [%w]", err)
 	}
 
 	var dataKeys map[string]interface{}
@@ -69,84 +160,55 @@ func (v *vaultManager) unlock(ctx context.Context) error {
 	if !isInit {
 		dataKeys, err = v.init(ctx, int32(v.accessKeysNum))
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		tmp, ok := dataKeys["root_token"]
 		if !ok {
-			return errors.New("root_token not received")
+			return nil, errors.New("root_token not received")
 		}
 
 		token = tmp.(string)
 		if err := v.storage.InsertKeyValue("keys", "token", token); err != nil {
-			return fmt.Errorf("not possible to insert key in boldtd: [%w]", err)
+			return nil, fmt.Errorf("not possible to insert key in boldtd: [%w]", err)
 		}
 
 		tmp, ok = dataKeys["keys"]
 		if !ok {
-			return errors.New("keys not received")
+			return nil, errors.New("keys not received")
 		}
 		unsealKeys = tmp.([]interface{})
 
 		for i, key := range unsealKeys {
 			err := v.storage.InsertKeyValue(kvKey, strconv.Itoa(i), key.(string))
 			if err != nil {
-				return fmt.Errorf("unlock store keys: [%w]", err)
+				return nil, fmt.Errorf("unlock store keys: [%w]", err)
 			}
 		}
 
 		err = v.unseal(ctx, unsealKeys)
 		if err != nil {
-			return fmt.Errorf("unseal: [%w]", err)
+			return nil, fmt.Errorf("unseal: [%w]", err)
 		}
 
-		err = v.enableUserPassAuth(ctx, authType, token)
-		if err != nil {
-			return fmt.Errorf("unlock: [%w]", err)
-		}
-
-		_, err = v.mountKvEnginePath(ctx, kvPath, kvType, token)
-		if err != nil {
-			return fmt.Errorf("enable kv: (%s, %s) [%w]", kvPath, kvType, err)
-		}
-
-		err = v.upsertKvV2Secret(ctx, kvKey, kvPath, dataKeys, token)
-		if err != nil {
-			return fmt.Errorf("add kv to secret: (%s, %s) [%w]", kvKey, kvPath, err)
-		}
-
-		policy := `
-path "unlocker/data/*" { capabilities = [ "read", "list" ]}
-path "unlocker/metadata/*" { capabilities = [ "read", "list" ]}
-`
-		err = v.createPolicy(ctx, userPolicyName, policy, token)
-		if err != nil {
-			return fmt.Errorf("create policy: (%s) [%w]", policy, err)
-		}
-
-		err = v.createUserPassAuthUser(ctx, userPassUser, userPassPass, userPolicyName, token)
-		if err != nil {
-			return fmt.Errorf("create user pass: [%w]", err)
-		}
-
-		return nil
+		return dataKeys, nil
 	}
 
 	sealed, err := v.isSealed(ctx)
 	if err != nil {
-		return fmt.Errorf("checking if vailt is unseald: [%w]", err)
+		return nil, fmt.Errorf("checking if vailt is unseald: [%w]", err)
 	}
 
 	if !sealed {
 		slog.Info("vault is already unsealed")
-		return nil
+		return nil, nil
 	}
 
 	if len(unsealKeys) == 0 {
 		for i := range v.accessKeysNum {
 			res, err := v.storage.RetrieveKey(kvKey, strconv.Itoa(i))
 			if err != nil {
-				return fmt.Errorf("retrieve key: [%w]", err)
+				return nil, fmt.Errorf("retrieve key: [%w]", err)
 			}
 			unsealKeys = append(unsealKeys, res)
 		}
@@ -155,54 +217,35 @@ path "unlocker/metadata/*" { capabilities = [ "read", "list" ]}
 
 	err = v.unseal(ctx, unsealKeys)
 	if err != nil {
-		return fmt.Errorf("unseal: [%w]", err)
+		return nil, fmt.Errorf("unseal: [%w]", err)
 	}
 
-	return nil
+	return nil, nil
 }
 
-func (v *vaultManager) provisionSecrets(ctx context.Context) error {
+func (v *vaultManager) ensureSecretsProvisioned(ctx context.Context, mountPath string, secrets []conf.Secrets, token string) error {
 
-	if v.provisioner == nil {
-		slog.Warn("no secrets are going to be provisioned")
-		return nil
-	}
-
-	token, err := v.storage.RetrieveKey("keys", "token")
-	if err != nil {
-		return fmt.Errorf("set secrets error: [%w]", err)
-	}
-
-	for _, mountPath := range v.provisioner.Mount {
-		_, err := v.mountKvEnginePath(ctx, mountPath.Path, mountPath.Type, token)
-
-		if err != nil && !strings.Contains(err.Error(), "400 Bad") {
-			slog.Error("error mount secret engine", "type", mountPath.Type, "path", mountPath.Path, "error", err)
+	for _, secret := range secrets {
+		secretPathName, err := url.JoinPath(secret.Path, secret.Name)
+		if err != nil {
+			slog.Error("error manipulating secret path", "mount", mountPath, "path", secret.Path, "secret", secret.Name, "err", err)
 			continue
 		}
 
-		for _, secret := range mountPath.Secrets {
-			secretPathName, err := url.JoinPath(secret.Path, secret.Name)
+		err = v.isKVSecretExistent(ctx, mountPath, secretPathName, token)
+		if err == nil {
+			slog.Info("secret already exists, continuing....", "mount", mountPath, "secret", secretPathName)
+			continue
+		}
+
+		if strings.Contains(err.Error(), "404") {
+			err = v.upsertKvV2Secret(ctx, secretPathName, mountPath, randomize(secret.Data, 32), token)
 			if err != nil {
-				slog.Error("error manipulating secret path", "mount", mountPath.Path, "path", secret.Path, "secret", secret.Name, "err", err)
-				continue
+				slog.Error("error when adding secret", "mount", mountPath, "path", secret.Path, "secret", secret.Name, "error", err)
 			}
-
-			err = v.IsKVSecretExistent(ctx, mountPath.Path, secretPathName, token)
-			if err == nil {
-				slog.Info("secret already exists, continuing....", "mount", mountPath.Path, "secret", secretPathName)
-				continue
-			}
-
-			if strings.Contains(err.Error(), "404") {
-				err = v.upsertKvV2Secret(ctx, secretPathName, mountPath.Path, randomize(secret.Data, 32), token)
-				if err != nil {
-					slog.Error("error when adding secret", "mount", mountPath.Path, "path", secret.Path, "secret", secret.Name, "error", err)
-				}
-			} else {
-				slog.Info("not possible to check if secret exists", "mount", mountPath, "secret", secretPathName)
-				return err
-			}
+		} else {
+			slog.Info("not possible to check if secret exists", "mount", mountPath, "secret", secretPathName)
+			return err
 		}
 	}
 
