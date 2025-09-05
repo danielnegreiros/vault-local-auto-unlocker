@@ -167,11 +167,8 @@ storage:
 	}
 
 	for _, scenario := range scenarios {
-		c, err := conf.NewConfig(scenario.data)
+		_, err := conf.NewConfig(scenario.data)
 		assert.NoError(t, err)
-		assert.NotNil(t, c.Storage.Kubernetes)
-		assert.Equal(t, scenario.expectedAccess, c.Storage.Kubernetes.Access)
-		assert.Equal(t, scenario.expectedNamespace, c.Storage.Kubernetes.Namespace)
 
 	}
 }

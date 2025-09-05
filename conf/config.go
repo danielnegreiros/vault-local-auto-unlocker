@@ -25,7 +25,12 @@ type config struct {
 	Provisioner *Provisioner `yaml:"provisioner"`
 	Unlocker    *Unlocker    `yaml:"unlocker"`
 	Encryption  *Encryption  `yaml:"encryption"`
+	Exporter    *Exporter    `yaml:"exporters"`
 	Storage     *Storage     `yaml:"storage"`
+}
+
+type Exporter struct {
+	Kubernetes *Kubernetes `yaml:"kubernetes"`
 }
 
 type Provisioner struct {
@@ -82,9 +87,8 @@ type Encryption struct {
 }
 
 type Storage struct {
-	StorageType string      `yaml:"type"`
-	Kubernetes  *Kubernetes `yaml:"kubernetes"`
-	BoltDB      *BoltBD     `yaml:"boltdb"`
+	StorageType string  `yaml:"type"`
+	BoltDB      *BoltBD `yaml:"boltdb"`
 }
 
 type Kubernetes struct {
@@ -170,9 +174,9 @@ func (e *Encryption) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return nil
 }
 
-func (s *Storage) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	*s = Storage{}
-	type plain Storage
+func (s *Exporter) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	*s = Exporter{}
+	type plain Exporter
 	err := unmarshal((*plain)(s))
 	if err != nil {
 		return err
@@ -180,6 +184,17 @@ func (s *Storage) UnmarshalYAML(unmarshal func(interface{}) error) error {
 
 	if s.Kubernetes == nil {
 		s.Kubernetes = getDefaultKubernetes()
+	}
+
+	return nil
+}
+
+func (s *Storage) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	*s = Storage{}
+	type plain Storage
+	err := unmarshal((*plain)(s))
+	if err != nil {
+		return err
 	}
 
 	if s.BoltDB == nil {

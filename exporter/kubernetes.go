@@ -19,7 +19,7 @@ type kubernetesClient struct {
 	AccessMode string
 }
 
-func NewkubernetesClient(appCfg *conf.Storage) (*kubernetesClient, error) {
+func NewkubernetesClient(appCfg *conf.Exporter) (*kubernetesClient, error) {
 
 	storage := &kubernetesClient{
 		Namespace:  appCfg.Kubernetes.Namespace,
@@ -40,7 +40,7 @@ func NewkubernetesClient(appCfg *conf.Storage) (*kubernetesClient, error) {
 	if storage.AccessMode == "in-cluster" {
 		cfg, err = rest.InClusterConfig()
 		if err != nil {
-			panic(err.Error())
+			return nil, err
 		}
 	}
 
