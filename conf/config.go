@@ -58,6 +58,9 @@ type AppRole struct {
 	SecretIdTTL int      `yaml:"secret_id_ttl"`
 	TokenTTL    int      `yaml:"token_ttl"`
 	TokenMaxTTL int      `yaml:"token_max_ttl"`
+	Export      struct {
+		Namespace string `yaml:"namespace"`
+	} `yaml:"export"`
 }
 
 type Policy struct {
@@ -92,8 +95,7 @@ type Storage struct {
 }
 
 type Kubernetes struct {
-	Access    string `yaml:"access"`
-	Namespace string `yaml:"namespace"`
+	Access string `yaml:"access"`
 }
 
 type BoltBD struct {

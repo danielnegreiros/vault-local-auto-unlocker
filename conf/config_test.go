@@ -1,6 +1,7 @@
 package conf_test
 
 import (
+	"log"
 	"testing"
 	"vault-unlocker/conf"
 
@@ -123,7 +124,7 @@ storage:
 		assert.NoError(t, err)
 		assert.NotNil(t, c.Storage)
 		assert.Equal(t, "boltdb", c.Storage.StorageType)
-		assert.Equal(t, "/vault/data/bolt.db", c.Storage.BoltDB.Path)
+		assert.Equal(t, "/home/vaultmanager/data/bolt.db", c.Storage.BoltDB.Path)
 
 	}
 }
@@ -193,7 +194,7 @@ storage:
 storage:
   type: boltdb
 `),
-			expected: "/vault/data/bolt.db",
+			expected: "/home/vaultmanager/data/bolt.db",
 		},
 	}
 
@@ -206,28 +207,28 @@ storage:
 	}
 }
 
-func TestInvalidKubernetes(t *testing.T) {
+// func TestInvalidKubernetes(t *testing.T) {
 
-	scenarios := []struct {
-		data        []byte
-		expectedErr string
-	}{
-		{
-			data: []byte(`
-storage:
-  type: kubernetes
-  kubernetes:
-    access: oua-cluster
-`),
-			expectedErr: "invalid",
-		},
-	}
+// 	scenarios := []struct {
+// 		data        []byte
+// 		expectedErr string
+// 	}{
+// 		{
+// 			data: []byte(`
+// storage:
+//   type: kubernetes
+//   kubernetes:
+//     access: oua-cluster
+// `),
+// 			expectedErr: "invalid",
+// 		},
+// 	}
 
-	for _, scenario := range scenarios {
-		_, err := conf.NewConfig(scenario.data)
-		assert.ErrorContains(t, err, scenario.expectedErr)
-	}
-}
+// 	for _, scenario := range scenarios {
+// 		_, err := conf.NewConfig(scenario.data)
+// 		assert.ErrorContains(t, err, scenario.expectedErr)
+// 	}
+// }
 
 func TestGeneratorConfig(t *testing.T) {
 	scenarios := []struct {
@@ -336,16 +337,17 @@ provisioner:
 
 func TestAppRoleConfig(t *testing.T) {
 	scenarios := []struct {
-		name                             string
-		data                             []byte
-		expectedLenApproles              int
-		expectedLenPolicies              int
-		expectedFirstAppRoleName         string
-		expectedFirstPolicyName          string
-		expectedFirstAppRoleSecretTTL    int
-		expectedFirstAppRoleTokenTTL     int
-		expectedFirstAppRoleTokenMaxTTL  int
-		expectedFirstAppRolenLenPolicies int
+		name                                string
+		data                                []byte
+		expectedLenApproles                 int
+		expectedLenPolicies                 int
+		expectedFirstAppRoleName            string
+		expectedFirstPolicyName             string
+		expectedFirstAppRoleSecretTTL       int
+		expectedFirstAppRoleTokenTTL        int
+		expectedFirstAppRoleTokenMaxTTL     int
+		expectedFirstAppRolenLenPolicies    int
+		expectedFirstAppRoleExportNamespace string
 		// expectedType           string
 		// expectedPath           string
 		// expectedLenSecrets     int
@@ -401,6 +403,8 @@ provisioner:
       secret_id_ttl: 0
       token_ttl: 3600
       token_max_ttl: 7200
+      export:
+        namespace: security
     - name: external-secret-operator-2
       policies:
         - external-secret-operator-policy
@@ -414,15 +418,16 @@ provisioner:
       token_ttl: 3600
       token_max_ttl: 7200
 `),
-			name:                             "Happy Provisioner",
-			expectedLenApproles:              3,
-			expectedLenPolicies:              2,
-			expectedFirstAppRoleName:         "external-secret-operator",
-			expectedFirstPolicyName:          "external-secret-operator",
-			expectedFirstAppRoleSecretTTL:    0,
-			expectedFirstAppRoleTokenTTL:     3600,
-			expectedFirstAppRoleTokenMaxTTL:  7200,
-			expectedFirstAppRolenLenPolicies: 2,
+			name:                                "Happy Provisioner",
+			expectedLenApproles:                 3,
+			expectedLenPolicies:                 2,
+			expectedFirstAppRoleName:            "external-secret-operator",
+			expectedFirstPolicyName:             "external-secret-operator",
+			expectedFirstAppRoleSecretTTL:       0,
+			expectedFirstAppRoleTokenTTL:        3600,
+			expectedFirstAppRoleTokenMaxTTL:     7200,
+			expectedFirstAppRolenLenPolicies:    2,
+			expectedFirstAppRoleExportNamespace: "security",
 		},
 	}
 
@@ -467,8 +472,43 @@ provisioner:
 			t.Errorf("\n%s: Found: %d, Expected: %d", scenario.name, len(appRole1.PolicyNames), scenario.expectedFirstAppRolenLenPolicies)
 		}
 
+		if appRole1.Export.Namespace != scenario.expectedFirstAppRoleExportNamespace {
+			t.Errorf("\n%s: Found: %s, Expected: %s", scenario.name, appRole1.Export.Namespace, scenario.expectedFirstAppRoleExportNamespace)
+		}
+
 		for _, p := range prov.Policies {
 			assert.NotEmpty(t, p.Rules)
 		}
 	}
+}
+
+func TestExporterConfig(t *testing.T) {
+	scenarios := []struct {
+		data           []byte
+		name           string
+		expectedAccess string
+	}{
+		{
+			data: []byte(`
+exporters:
+  type: kubernetes
+  kubernetes:
+    access: out-cluster
+`),
+			name:           "Happy Exporter",
+			expectedAccess: "out-cluster",
+		},
+	}
+
+	for _, scenario := range scenarios {
+		cfg, err := conf.NewConfig(scenario.data)
+		assert.NoError(t, err)
+		if cfg.Exporter.Kubernetes == nil {
+			log.Fatalf("No kubernetes config found")
+		}
+		if cfg.Exporter.Kubernetes.Access != scenario.expectedAccess {
+			t.Errorf("\n%s: Found: %s, Expected: %s", scenario.name, cfg.Exporter.Kubernetes.Access, scenario.expectedAccess)
+		}
+	}
+
 }

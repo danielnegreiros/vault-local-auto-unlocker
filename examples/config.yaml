@@ -5,16 +5,13 @@ manager:
 unlocker:
   number_keys: 3
   request_timeout: 5
-  # url: http://localhost:8200
+  url: http://localhost:8200
 
 encryption:
   path: "./tests/vault/data/"
 
 storage:
   type: boltdb
-  kubernetes:
-    access: out-cluster
-    namespace: monitoring
   boltdb:
     path: "./tests/vault/data/integration.db"
 
@@ -51,6 +48,8 @@ provisioner:
         secret_id_ttl: 0
         token_ttl: 3600
         token_max_ttl: 7200
+        export:
+          namespace: security
 
   mounts:
   - type: kv-v2
@@ -65,3 +64,6 @@ provisioner:
           k1: v1
           k2: "*random*"
 
+exporter:
+  kubernetes:
+    access: out-cluster

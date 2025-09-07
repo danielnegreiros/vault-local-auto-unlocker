@@ -23,9 +23,9 @@ exporters:
 	assert.NoError(t, err)
 
 	ctx := context.Background()
-	err = client.ListSecrets(ctx)
+	err = client.ListSecrets(ctx, "security")
 	assert.NoError(t, err)
-	err = client.ReadkSecret(ctx, "grafana")
+	err = client.ReadkSecret(ctx, "security", "grafana")
 	assert.NoError(t, err)
 }
 
@@ -53,7 +53,7 @@ exporters:
 	converted, err := convertToByteMap(secretData)
 	assert.NoError(t, err)
 
-	sec, err := client.CreateSecret(context.Background(), "my-secret", converted)
+	sec, err := client.CreateSecret(context.Background(), "security", "my-secret", converted)
 	assert.NoError(t, err)
 
 	t.Logf("Created secret: %v", sec)

@@ -19,14 +19,12 @@ import (
 
 type kubernetesClient struct {
 	Client     *kubernetes.Clientset
-	Namespace  string
 	AccessMode string
 }
 
 func NewkubernetesClient(appCfg *conf.Exporter) (*kubernetesClient, error) {
 
 	storage := &kubernetesClient{
-		Namespace:  appCfg.Kubernetes.Namespace,
 		AccessMode: appCfg.Kubernetes.Access,
 	}
 
@@ -58,8 +56,8 @@ func NewkubernetesClient(appCfg *conf.Exporter) (*kubernetesClient, error) {
 }
 
 // RetrieveKeys implements storage.
-func (h *kubernetesClient) ListSecrets(ctx context.Context) error {
-	secrets, err := h.Client.CoreV1().Secrets(h.Namespace).List(ctx, metav1.ListOptions{})
+func (h *kubernetesClient) ListSecrets(ctx context.Context, namespace string) error {
+	secrets, err := h.Client.CoreV1().Secrets(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
@@ -72,8 +70,8 @@ func (h *kubernetesClient) ListSecrets(ctx context.Context) error {
 }
 
 // ReadkSecret implements storage.
-func (h *kubernetesClient) ReadkSecret(ctx context.Context, name string) error {
-	secret, err := h.Client.CoreV1().Secrets(h.Namespace).Get(ctx, name, metav1.GetOptions{})
+func (h *kubernetesClient) ReadkSecret(ctx context.Context, namespace string, name string) error {
+	secret, err := h.Client.CoreV1().Secrets(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -83,15 +81,15 @@ func (h *kubernetesClient) ReadkSecret(ctx context.Context, name string) error {
 	return nil
 }
 
-func (h *kubernetesClient) CreateSecret(ctx context.Context, name string, data map[string][]byte) (*corev1.Secret, error) {
+func (h *kubernetesClient) CreateSecret(ctx context.Context, namespace string, name string, data map[string][]byte) (*corev1.Secret, error) {
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Namespace: h.Namespace,
+			Namespace: namespace,
 		},
 		Data: data,
 	}
-	return h.Client.CoreV1().Secrets(h.Namespace).Create(ctx, secret, metav1.CreateOptions{})
+	return h.Client.CoreV1().Secrets(namespace).Create(ctx, secret, metav1.CreateOptions{})
 }
 
 func convertToByteMap(input map[string]interface{}) (map[string][]byte, error) {
