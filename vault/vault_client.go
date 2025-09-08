@@ -9,6 +9,7 @@ import (
 
 	"github.com/hashicorp/vault-client-go"
 	"github.com/hashicorp/vault-client-go/schema"
+	vapi "github.com/hashicorp/vault/api"
 )
 
 type ivault interface {
@@ -18,6 +19,8 @@ type ivault interface {
 	unseal(ctx context.Context, keys []interface{}) error
 	enableAuth(ctx context.Context, type_ string, mountPath string, token string) error
 	ensureAppRoleCreate(ctx context.Context, roleName string, mountPath string, policies []string, token string) (*vault.Response[map[string]interface{}], error)
+	generateAppRoleSecretID(ctx context.Context, roleName string, path string, token string) (string, error)
+	getAppRoleRoleID(ctx context.Context, roleName string, path string, token string) (string, error)
 	createUserPassAuthUser(ctx context.Context, mountPath string, user string, pass string, policies []string, token string) error
 	mountKvEnginePath(ctx context.Context, path string, engType string, token string) (*vault.Response[map[string]interface{}], error)
 	upsertKvV2Secret(ctx context.Context, secretPath string, mountPath string, data map[string]interface{}, token string) error
@@ -167,12 +170,47 @@ func (v *vaultClient) ensurePolicy(ctx context.Context, policyName string, polic
 }
 
 func (v *vaultClient) ensureAppRoleCreate(ctx context.Context, roleName string, mountPath string, policies []string, token string) (*vault.Response[map[string]interface{}], error) {
-	res, err := v.client.Auth.AppRoleWriteRole(ctx, roleName, schema.AppRoleWriteRoleRequest{
-		SecretIdTtl: "0",
-		TokenTtl:    "0",
-		TokenMaxTtl: "7200",
-	}, vault.WithMountPath(mountPath), vault.WithToken(token))
+	res, err := v.client.Auth.AppRoleWriteRole(ctx, roleName, schema.AppRoleWriteRoleRequest{}, vault.WithMountPath(mountPath), vault.WithToken(token))
 
 	slog.Info("approle create with success", "role", roleName, "path", mountPath, "policies", policies)
 	return res, err
+}
+
+func (v *vaultClient) generateAppRoleSecretID(ctx context.Context, roleName string, path string, token string) (string, error) {
+	// Using another vault API client sdk because vault-client-go does not support this operation yet
+	// or at least it is trowing an odd erros
+	slog.Info("generating secret id", "role", roleName, "path", path)
+
+	config := vapi.DefaultConfig()
+	config.Address = v.ep
+
+	client, err := vapi.NewClient(config)
+	if err != nil {
+		return "", err
+	}
+
+	client.SetToken(token)
+
+	request := fmt.Sprintf("auth/%s/role/%s/secret-id", path, roleName)
+	secret, err := client.Logical().Write(request, nil)
+	if err != nil {
+		return "", err
+	}
+
+	// Extract SecretID and Accessor
+	if secret != nil && secret.Data != nil {
+		return secret.Data["secret_id"].(string), nil
+	} else {
+		return "", fmt.Errorf("no secret data found")
+	}
+
+}
+
+func (v *vaultClient) getAppRoleRoleID(ctx context.Context, roleName string, path string, token string) (string, error) {
+	resp, err := v.client.Auth.AppRoleReadRoleId(ctx, roleName, vault.WithMountPath(path), vault.WithToken(token))
+	if err != nil {
+		return "", fmt.Errorf("get role id: [%w]", err)
+	}
+	slog.Info("get role id with success", "role", roleName, "path", path)
+	return resp.Data.RoleId, nil
 }

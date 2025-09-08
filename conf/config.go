@@ -25,7 +25,7 @@ type config struct {
 	Provisioner *Provisioner `yaml:"provisioner"`
 	Unlocker    *Unlocker    `yaml:"unlocker"`
 	Encryption  *Encryption  `yaml:"encryption"`
-	Exporter    *Exporter    `yaml:"exporters"`
+	Exporter    *Exporter    `yaml:"exporter"`
 	Storage     *Storage     `yaml:"storage"`
 }
 
@@ -58,7 +58,7 @@ type AppRole struct {
 	SecretIdTTL int      `yaml:"secret_id_ttl"`
 	TokenTTL    int      `yaml:"token_ttl"`
 	TokenMaxTTL int      `yaml:"token_max_ttl"`
-	Export      struct {
+	Export      *struct {
 		Namespace string `yaml:"namespace"`
 	} `yaml:"export"`
 }

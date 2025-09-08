@@ -19,7 +19,7 @@ exporters:
 	appCfg, err := conf.NewConfig([]byte(data))
 	assert.NoError(t, err)
 
-	client, err := NewkubernetesClient(appCfg.Exporter)
+	client, err := NewKubernetesClient(appCfg.Exporter)
 	assert.NoError(t, err)
 
 	ctx := context.Background()
@@ -40,7 +40,7 @@ exporters:
 	appCfg, err := conf.NewConfig([]byte(data))
 	assert.NoError(t, err)
 
-	client, err := NewkubernetesClient(appCfg.Exporter)
+	client, err := NewKubernetesClient(appCfg.Exporter)
 	assert.NoError(t, err)
 
 	secretData := map[string]interface{}{

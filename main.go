@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 	"vault-unlocker/conf"
+	"vault-unlocker/exporter"
 	"vault-unlocker/storage"
 	vault_manager "vault-unlocker/vault"
 )
@@ -56,7 +57,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	vm, err := vault_manager.NewVaultManager(c.Unlocker, c.Provisioner, vClient, store)
+	k8sClient, err := exporter.NewKubernetesClient(c.Exporter)
+	if err != nil {
+		slog.Warn("init kubernetes client, continuing...", "err", err)
+	}
+
+	vm, err := vault_manager.NewVaultManager(c.Unlocker, c.Provisioner, vClient, store, k8sClient)
 	if err != nil {
 		slog.Error("unlocker config", "err", err)
 		os.Exit(1)
@@ -65,7 +71,7 @@ func main() {
 	ctx, stop := context.WithCancel(context.Background())
 	defer stop()
 
-	ticker := time.NewTicker(60 * time.Second)
+	ticker := time.NewTicker(5 * time.Minute)
 	defer ticker.Stop()
 
 	endChan := make(chan os.Signal, 1)

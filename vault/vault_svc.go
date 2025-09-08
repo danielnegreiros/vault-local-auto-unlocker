@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"vault-unlocker/conf"
+	"vault-unlocker/exporter"
 	"vault-unlocker/storage"
 )
 
@@ -25,14 +26,16 @@ type vaultManager struct {
 	accessKeysNum int
 	storage       storage.Storage
 	provisioner   *conf.Provisioner
+	k8sClient     *exporter.KubernetesClient
 }
 
-func NewVaultManager(cfg *conf.Unlocker, prov *conf.Provisioner, vClient ivault, store storage.Storage) (*vaultManager, error) {
+func NewVaultManager(cfg *conf.Unlocker, prov *conf.Provisioner, vClient ivault, store storage.Storage, k8sClient *exporter.KubernetesClient) (*vaultManager, error) {
 	return &vaultManager{
 		ivault:        vClient,
 		accessKeysNum: cfg.NumberKeys,
 		storage:       store,
 		provisioner:   prov,
+		k8sClient:     k8sClient,
 	}, nil
 }
 
@@ -64,6 +67,28 @@ func (v *vaultManager) Run(ctx context.Context) error {
 		err = v.upsertKvV2Secret(ctx, kvKey, kvPath, dataKeys, token)
 		if err != nil {
 			return fmt.Errorf("add kv to secret: (%s, %s) [%w]", kvKey, kvPath, err)
+		}
+	}
+
+	if v.k8sClient != nil {
+		for _, authMount := range v.provisioner.Auth {
+			if authMount.AppRoles == nil {
+				continue
+			}
+
+			switch authMount.AuthType {
+			case "approle":
+				// TODO - Make sure approles has a default secretID TTL of 24 hours
+				// TODO - Create or update the secretID if already exists
+				v.exportSecretstoK8s(ctx, authMount.Path, authMount.AppRoles, token)
+			default:
+				slog.Info("auth type not supported for export, continuing...", "type", authMount.AuthType)
+				continue
+			}
+		}
+		err = v.k8sClient.ListSecrets(ctx, "default")
+		if err != nil {
+			slog.Warn("not possible to list secrets in kubernetes, continuing...", "err", err)
 		}
 	}
 
@@ -256,6 +281,40 @@ func (v *vaultManager) ensureSecretsProvisioned(ctx context.Context, mountPath s
 		} else {
 			slog.Info("not possible to check if secret exists", "mount", mountPath, "secret", secretPathName)
 			return err
+		}
+	}
+
+	return nil
+}
+
+func (v *vaultManager) exportSecretstoK8s(ctx context.Context, path string, roles []conf.AppRole, token string) error {
+	for _, role := range roles {
+		if role.Export == nil || role.Export.Namespace == "" {
+			continue
+		}
+
+		roleID, err := v.getAppRoleRoleID(ctx, role.Name, path, token)
+		if err != nil {
+			slog.Warn("not possible to get roleID for approle, continuing...", "role", role.Name, "path", path, "err", err)
+			continue
+		}
+
+		slog.Info("retrieved roleID for approle", "role", role.Name, "roleID", roleID)
+
+		slog.Info("exporting approle to kubernetes", "role", role.Name)
+		secretID, err := v.generateAppRoleSecretID(ctx, role.Name, path, token)
+		if err != nil {
+			slog.Warn("not possible to generate secretID for approle, continuing...", "role", role.Name, "path", path, "err", err)
+			continue
+		}
+
+		_, err = v.k8sClient.CreateOrUpdateSecret(ctx, role.Export.Namespace, role.Name, map[string][]byte{
+			"role_id":   []byte(roleID),
+			"secret_id": []byte(secretID),
+		})
+		if err != nil {
+			slog.Warn("not possible to create or update secret in kubernetes, continuing...", "role", role.Name, "namespace", role.Export.Namespace, "err", err)
+			continue
 		}
 	}
 

@@ -17,15 +17,19 @@ import (
 	"k8s.io/client-go/util/homedir"
 )
 
-type kubernetesClient struct {
+type KubernetesClient struct {
 	Client     *kubernetes.Clientset
 	AccessMode string
 }
 
-func NewkubernetesClient(appCfg *conf.Exporter) (*kubernetesClient, error) {
+func NewKubernetesClient(exporter *conf.Exporter) (*KubernetesClient, error) {
+	if exporter == nil || exporter.Kubernetes == nil {
+		slog.Warn("kubernetes config is nil, skipping kubernetes client creation")
+		return nil, nil
+	}
 
-	storage := &kubernetesClient{
-		AccessMode: appCfg.Kubernetes.Access,
+	storage := &KubernetesClient{
+		AccessMode: exporter.Kubernetes.Access,
 	}
 
 	var cfg *rest.Config
@@ -56,7 +60,7 @@ func NewkubernetesClient(appCfg *conf.Exporter) (*kubernetesClient, error) {
 }
 
 // RetrieveKeys implements storage.
-func (h *kubernetesClient) ListSecrets(ctx context.Context, namespace string) error {
+func (h *KubernetesClient) ListSecrets(ctx context.Context, namespace string) error {
 	secrets, err := h.Client.CoreV1().Secrets(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return err
@@ -70,7 +74,7 @@ func (h *kubernetesClient) ListSecrets(ctx context.Context, namespace string) er
 }
 
 // ReadkSecret implements storage.
-func (h *kubernetesClient) ReadkSecret(ctx context.Context, namespace string, name string) error {
+func (h *KubernetesClient) ReadkSecret(ctx context.Context, namespace string, name string) error {
 	secret, err := h.Client.CoreV1().Secrets(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return err
@@ -81,7 +85,7 @@ func (h *kubernetesClient) ReadkSecret(ctx context.Context, namespace string, na
 	return nil
 }
 
-func (h *kubernetesClient) CreateSecret(ctx context.Context, namespace string, name string, data map[string][]byte) (*corev1.Secret, error) {
+func (h *KubernetesClient) CreateOrUpdateSecret(ctx context.Context, namespace string, name string, data map[string][]byte) (*corev1.Secret, error) {
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,

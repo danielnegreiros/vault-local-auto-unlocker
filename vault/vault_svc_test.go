@@ -31,7 +31,7 @@ func setup(data []byte) (*vaultManager, error) {
 		return nil, err
 	}
 
-	vm, err := NewVaultManager(appCfg.Unlocker, appCfg.Provisioner, client, store)
+	vm, err := NewVaultManager(appCfg.Unlocker, appCfg.Provisioner, client, store, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +59,7 @@ func setUpWithoutToken(data []byte) (*VaultManagerTest, error) {
 	if err != nil {
 		return nil, err
 	}
-	vm, err := NewVaultManager(appCfg.Unlocker, nil, client, store)
+	vm, err := NewVaultManager(appCfg.Unlocker, nil, client, store, nil)
 	if err != nil {
 		return nil, err
 	}
