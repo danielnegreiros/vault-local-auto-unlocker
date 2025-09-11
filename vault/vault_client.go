@@ -155,6 +155,7 @@ func (v *vaultClient) ensurePolicy(ctx context.Context, policyName string, polic
 func (v *vaultClient) ensureAppRoleCreate(ctx context.Context, roleName string, mountPath string, policies []string, secretIDTTl int, token string) (*vault.Response[map[string]interface{}], error) {
 	res, err := v.client.Auth.AppRoleWriteRole(ctx, roleName, schema.AppRoleWriteRoleRequest{
 		SecretIdTtl: strconv.Itoa(secretIDTTl),
+		Policies: policies,
 	}, vault.WithMountPath(mountPath), vault.WithToken(token))
 
 	slog.Info("approle create with success", "role", roleName, "path", mountPath, "policies", policies, "secretTTL", secretIDTTl)
