@@ -22,16 +22,16 @@ const (
 )
 
 type vaultManager struct {
-	ivault
+	*vaultClient
 	accessKeysNum int
 	storage       storage.Storage
 	provisioner   *conf.Provisioner
 	k8sClient     *exporter.KubernetesClient
 }
 
-func NewVaultManager(cfg *conf.Unlocker, prov *conf.Provisioner, vClient ivault, store storage.Storage, k8sClient *exporter.KubernetesClient) (*vaultManager, error) {
+func NewVaultManager(cfg *conf.Unlocker, prov *conf.Provisioner, vClient *vaultClient, store storage.Storage, k8sClient *exporter.KubernetesClient) (*vaultManager, error) {
 	return &vaultManager{
-		ivault:        vClient,
+		vaultClient:   vClient,
 		accessKeysNum: cfg.NumberKeys,
 		storage:       store,
 		provisioner:   prov,
@@ -64,7 +64,7 @@ func (v *vaultManager) Run(ctx context.Context) error {
 	}
 
 	if dataKeys != nil {
-		err = v.upsertKvV2Secret(ctx, kvKey, kvPath, dataKeys, token)
+		err = v.creteOrUpdateKvV2Secret(ctx, kvKey, kvPath, dataKeys, token)
 		if err != nil {
 			return fmt.Errorf("add kv to secret: (%s, %s) [%w]", kvKey, kvPath, err)
 		}
@@ -85,10 +85,6 @@ func (v *vaultManager) Run(ctx context.Context) error {
 				slog.Info("auth type not supported for export, continuing...", "type", authMount.AuthType)
 				continue
 			}
-		}
-		err = v.k8sClient.ListSecrets(ctx, "default")
-		if err != nil {
-			slog.Warn("not possible to list secrets in kubernetes, continuing...", "err", err)
 		}
 	}
 
@@ -154,7 +150,7 @@ func (v *vaultManager) ensureAuthEnabled(ctx context.Context, token string) erro
 				continue
 			}
 			for _, role := range auth.AppRoles {
-				_, err := v.ensureAppRoleCreate(ctx, role.Name, auth.Path, role.PolicyNames, token)
+				_, err := v.ensureAppRoleCreate(ctx, role.Name, auth.Path, role.PolicyNames, role.SecretIdTTL, token)
 				if err != nil {
 					slog.Warn("not possible to create approle, continuing...", "role", role.Name, "type", auth.AuthType, "path", auth.Path)
 				}
@@ -274,7 +270,7 @@ func (v *vaultManager) ensureSecretsProvisioned(ctx context.Context, mountPath s
 		}
 
 		if strings.Contains(err.Error(), "404") {
-			err = v.upsertKvV2Secret(ctx, secretPathName, mountPath, randomize(secret.Data, 32), token)
+			err = v.creteOrUpdateKvV2Secret(ctx, secretPathName, mountPath, randomize(secret.Data, 32), token)
 			if err != nil {
 				slog.Error("error when adding secret", "mount", mountPath, "path", secret.Path, "secret", secret.Name, "error", err)
 			}

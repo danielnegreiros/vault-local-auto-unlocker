@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strconv"
 	"time"
 	"vault-unlocker/conf"
 
@@ -12,29 +13,11 @@ import (
 	vapi "github.com/hashicorp/vault/api"
 )
 
-type ivault interface {
-	isSealed(ctx context.Context) (bool, error)
-	isInitialized(ctx context.Context) (bool, error)
-	init(ctx context.Context, accessKeysNum int32) (map[string]interface{}, error)
-	unseal(ctx context.Context, keys []interface{}) error
-	enableAuth(ctx context.Context, type_ string, mountPath string, token string) error
-	ensureAppRoleCreate(ctx context.Context, roleName string, mountPath string, policies []string, token string) (*vault.Response[map[string]interface{}], error)
-	generateAppRoleSecretID(ctx context.Context, roleName string, path string, token string) (string, error)
-	getAppRoleRoleID(ctx context.Context, roleName string, path string, token string) (string, error)
-	createUserPassAuthUser(ctx context.Context, mountPath string, user string, pass string, policies []string, token string) error
-	mountKvEnginePath(ctx context.Context, path string, engType string, token string) (*vault.Response[map[string]interface{}], error)
-	upsertKvV2Secret(ctx context.Context, secretPath string, mountPath string, data map[string]interface{}, token string) error
-	isKVSecretExistent(ctx context.Context, mountPath string, path string, token string) error
-	ensurePolicy(ctx context.Context, policyName string, policy string, token string) error
-}
-
 type vaultClient struct {
 	ep      string
 	timeout int
 	client  *vault.Client
 }
-
-var _ ivault = (*vaultClient)(nil)
 
 func NewVaultClient(cfg *conf.Unlocker) (*vaultClient, error) {
 
@@ -138,7 +121,7 @@ func (v *vaultClient) mountKvEnginePath(ctx context.Context, path string, kvType
 	return resp, nil
 }
 
-func (v *vaultClient) upsertKvV2Secret(ctx context.Context, secretPath string, mountPath string, data map[string]interface{}, token string) error {
+func (v *vaultClient) creteOrUpdateKvV2Secret(ctx context.Context, secretPath string, mountPath string, data map[string]interface{}, token string) error {
 	_, err := v.client.Secrets.KvV2Write(ctx, secretPath, schema.KvV2WriteRequest{
 		Data: data,
 	}, vault.WithToken(token),
@@ -169,10 +152,12 @@ func (v *vaultClient) ensurePolicy(ctx context.Context, policyName string, polic
 	return nil
 }
 
-func (v *vaultClient) ensureAppRoleCreate(ctx context.Context, roleName string, mountPath string, policies []string, token string) (*vault.Response[map[string]interface{}], error) {
-	res, err := v.client.Auth.AppRoleWriteRole(ctx, roleName, schema.AppRoleWriteRoleRequest{}, vault.WithMountPath(mountPath), vault.WithToken(token))
+func (v *vaultClient) ensureAppRoleCreate(ctx context.Context, roleName string, mountPath string, policies []string, secretIDTTl int, token string) (*vault.Response[map[string]interface{}], error) {
+	res, err := v.client.Auth.AppRoleWriteRole(ctx, roleName, schema.AppRoleWriteRoleRequest{
+		SecretIdTtl: strconv.Itoa(secretIDTTl),
+	}, vault.WithMountPath(mountPath), vault.WithToken(token))
 
-	slog.Info("approle create with success", "role", roleName, "path", mountPath, "policies", policies)
+	slog.Info("approle create with success", "role", roleName, "path", mountPath, "policies", policies, "secretTTL", secretIDTTl)
 	return res, err
 }
 
