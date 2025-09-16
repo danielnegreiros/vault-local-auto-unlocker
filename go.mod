@@ -1,6 +1,6 @@
 module vault-unlocker
 
-go 1.24.3
+go 1.24
 
 require (
 	github.com/hashicorp/vault-client-go v0.4.3
