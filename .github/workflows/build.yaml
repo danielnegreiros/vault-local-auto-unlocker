@@ -10,36 +10,35 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  #   test:
-  #     runs-on: ubuntu-latest
-  #     steps:
-  #       - name: Checkout code
-  #         uses: actions/checkout@v4
+  app-testing:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-  #       - name: Set up Go
-  #         uses: actions/setup-go@v5
-  #         with:
-  #           go-version: "1.24.3"
-  #           cache: true
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24.3"
+          cache: true
 
-  #       - name: Download dependencies
-  #         run: go mod download
+      - name: Download dependencies
+        run: go mod download
 
-  #       - name: Verify dependencies
-  #         run: go mod verify
+      - name: Verify dependencies
+        run: go mod verify
 
-  #       - name: Run go vet
-  #         run: go vet ./...
+      - name: Run go vet
+        run: go vet ./...
 
-  #       - name: Run staticcheck
-  #         uses: dominikh/staticcheck-action@v1
-  #         with:
-  #           version: "latest"
+      - name: Run staticcheck
+        uses: dominikh/staticcheck-action@v1
+        with:
+          version: "latest"
 
   build-and-push:
-    # needs: test
+    needs: app-testing
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -54,9 +53,6 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-
-      - name: Install cosign
-        uses: sigstore/cosign-installer@v3
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
@@ -95,16 +91,19 @@ jobs:
             COMMIT=${{ github.sha }}
             BUILD_DATE=${{ steps.meta.outputs.created }}
 
-      - name: Sign container image with cosign
-        run: |
-          echo "${{ steps.meta.outputs.tags }}" | xargs -I {} cosign sign --yes {}@${{ steps.build-and-push.outputs.digest }}
+      #   - name: Install cosign
+      #     uses: sigstore/cosign-installer@v3
 
-      - name: Generate SBOM
-        uses: anchore/sbom-action@v0
-        with:
-          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build-and-push.outputs.digest }}
-          format: spdx-json
-          output-file: sbom.spdx.json
+      # - name: Sign container image with cosign
+      #   run: |
+      #     echo "${{ steps.meta.outputs.tags }}" | xargs -I {} cosign sign --yes {}@${{ steps.build-and-push.outputs.digest }}
+
+      # - name: Generate SBOM
+      #   uses: anchore/sbom-action@v0
+      #   with:
+      #     image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build-and-push.outputs.digest }}
+      #     format: spdx-json
+      #     output-file: sbom.spdx.json
 
       - name: Scan image with Trivy
         uses: aquasecurity/trivy-action@master
