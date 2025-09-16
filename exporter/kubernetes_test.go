@@ -23,9 +23,9 @@ exporters:
 	assert.NoError(t, err)
 
 	ctx := context.Background()
-	err = client.ListSecrets(ctx, "security")
+	_, err = client.ListSecrets(ctx, "security")
 	assert.NoError(t, err)
-	err = client.ReadkSecret(ctx, "security", "grafana")
+	err = client.ReadSecret(ctx, "security", "grafana")
 	assert.NoError(t, err)
 }
 
@@ -43,17 +43,14 @@ exporters:
 	client, err := NewKubernetesClient(appCfg.Exporter)
 	assert.NoError(t, err)
 
-	secretData := map[string]interface{}{
-		"username": "admin",
-		"password": "s3cr3t",
-		"enabled":  true,
-		"count":    42,
+	secretData := map[string][]byte{
+		"username": []byte("admin"),
+		"password": []byte("s3cr3t"),
+		"enabled":  []byte("true"),
+		"count":    []byte("42"),
 	}
 
-	converted, err := convertToByteMap(secretData)
-	assert.NoError(t, err)
-
-	sec, err := client.CreateSecret(context.Background(), "security", "my-secret", converted)
+	sec, err := client.CreateOrUpdateSecret(context.Background(), "security", "my-secret", secretData)
 	assert.NoError(t, err)
 
 	t.Logf("Created secret: %v", sec)
