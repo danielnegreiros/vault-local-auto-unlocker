@@ -45,8 +45,7 @@ vet: ## Run go vet
 
 test: ## Run tests
 	@echo "Running tests..."
-	go test -covermode=atomic -coverprofile=coverage.out ./...
-	go test -json ./... > test-report.json
+	go test -covermode=atomic -coverprofile=coverage.out -json ./... > test-report.json
 	gopherbadger -covercmd "go tool cover -func=coverage.out"
 
 coverage: ## Generate test coverage report
