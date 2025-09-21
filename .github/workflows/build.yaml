@@ -11,34 +11,7 @@ env:
 
 jobs:
   app-testing:
-    runs-on: ubuntu-latest
-    # services:
-    #   vault:
-    #     # Github Action wont allow default 8200
-    #     ports:
-    #       - "8212:8212"
-    #       - "8213:8213"
-    #     image: vault:1.13.3
-    #     env:
-    #       VAULT_LOCAL_CONFIG: |
-    #         ui = false
-    #         disable_mlock = "true"
-
-    #         storage "file" {
-    #           path = "/vault/data/"
-    #         }
-
-    #         listener "tcp" {
-    #           address = "[::]:8212"
-    #           tls_disable = "true"
-    #         }
-
-    #         api_addr = "http://localhost:8212"
-    #         cluster_addr = "http://localhost:8213"
-    #     options: >-
-    #       --cap-add=IPC_LOCK
-        
-
+    runs-on: ubuntu-latest     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -66,7 +39,9 @@ jobs:
         run: make vet
 
       - name: Test
-        run: make test
+        run: |
+          make test
+          rm -rf tests
   
       - name: Lint
         # fixing some issues
