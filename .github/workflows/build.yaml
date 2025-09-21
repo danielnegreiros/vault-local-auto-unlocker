@@ -50,7 +50,7 @@ jobs:
         run: |
           cd tests/vault
           mkdir -p ./data
-          docker-compose up -d
+          docker compose up -d
           cd -
 
       - name: Set up Go
