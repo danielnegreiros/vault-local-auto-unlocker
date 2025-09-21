@@ -1,11 +1,6 @@
 ui = true
 disable_mlock = "true"
 
-# storage "raft" {
-#   path    = "/vault/data"
-#   node_id = "node1"
-# }
-
 storage "file" {
   path = "/vault/data/"
 }

@@ -1,5 +1,14 @@
 package vault_manager
 
+import (
+	"context"
+	"testing"
+	"vault-unlocker/conf"
+	"vault-unlocker/storage"
+
+	"github.com/stretchr/testify/assert"
+)
+
 // import (
 // 	"context"
 // 	"log/slog"
@@ -16,28 +25,96 @@ package vault_manager
 // 	token string
 // }
 
-// func setup(data []byte) (*vaultManager, error) {
-// 	appCfg, err := conf.NewConfig(data)
-// 	if err != nil {
-// 		return nil, err
-// 	}
+	var data = []byte(`
+manager:
+  repeat_interval: 60 # seconds
+  operation_timeout: 50 # seconds
 
-// 	client, err := NewVaultClient(appCfg.Unlocker)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	store, err := storage.NewBoltDBStorage(appCfg.Storage.BoltDB)
-// 	if err != nil {
-// 		return nil, err
-// 	}
+unlocker:
+  number_keys: 3
+  request_timeout: 5
+  url: http://10.10.100.200:8200
 
-// 	vm, err := NewVaultManager(appCfg.Unlocker, appCfg.Provisioner, client, store, nil)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return vm, nil
+provisioner:
+  policies:
+    - name: unlocker
+      rules: |
+        path "unlocker/data/*" { capabilities = [ "read", "list" ]}
+        path "unlocker/metadata/*" { capabilities = [ "read", "list" ]}
 
-// }
+    - name: external-secret-operator
+      rules: |
+        path "cluster/metadata/*" { capabilities = ["read","list"] }
+        path "cluster/data/*" { capabilities = ["read","list"] }
+
+  auth:
+    - type: userpass
+      path: userpass
+      users:
+        - name: unlocker
+          pass: unlocker
+          policies:
+            - unlocker
+
+    - type: kubernetes
+      path: kubernetes
+
+    - type: approle
+      path: approle
+      approles:
+      - name: external-secret-operator
+        policies:
+          - external-secret-operator-policy
+        secret_id_ttl: 0
+        token_ttl: 3600
+        token_max_ttl: 7200
+
+  mounts:
+  - type: kv-v2
+    path: unlocker
+
+  - type: kv-v2
+    path: cluster
+    secrets:
+      - path: smoke/test
+        name: secret-name
+        data:
+          k1: v1
+          k2: "*random*"
+`)
+
+func setup(data []byte) (*vaultManager, error) {
+	appCfg, err := conf.NewConfig(data)
+	if err != nil {
+		return nil, err
+	}
+
+	client, err := NewVaultClient(appCfg.Unlocker)
+	if err != nil {
+		return nil, err
+	}
+	store, err := storage.NewBoltDBStorage(appCfg.Storage.BoltDB)
+	if err != nil {
+		return nil, err
+	}
+
+	vm, err := NewVaultManager(appCfg.Unlocker, appCfg.Provisioner, client, store, nil)
+	if err != nil {
+		return nil, err
+	}
+	return vm, nil
+
+}
+
+func TestRun(t *testing.T){
+	ctx := context.Background()
+
+	vm, err := setup(data)
+	assert.NoError(t, err)
+
+	err = vm.Run(ctx)
+	assert.NoError(t, err)
+}
 
 // func setUpWithoutToken(data []byte) (*VaultManagerTest, error) {
 
