@@ -43,6 +43,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up Docker Compose
+        uses: docker/setup-compose-action@v1
+
       - name: SetUp Vault container for testing
         run: |
           cd tests/vault
