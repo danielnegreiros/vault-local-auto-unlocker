@@ -4,6 +4,8 @@
 
 A comprehensive HashiCorp Vault management tool that provides automated initialization, unlocking, and provisioning capabilities. This application streamlines Vault operations by handling the complete lifecycle from initial setup to ongoing maintenance and configuration management.
 
+![coverage](./coverage_badge.png)
+
 ## 🚀 Features
 
 - **Auto-unlock**: Automatically unseal Vault using configurable key thresholds
