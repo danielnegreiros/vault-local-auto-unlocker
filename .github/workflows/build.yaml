@@ -14,6 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       vault:
+        # Github Action wont allow default 8200
         ports:
           - "8212:8212"
           - "8213:8213"
@@ -42,10 +43,10 @@ jobs:
             cluster_addr = "http://localhost:8213"
         options: >-
           --cap-add=IPC_LOCK
-          --health-cmd="vault status"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
+          # --health-cmd="vault status"
+          # --health-interval=10s
+          # --health-timeout=5s
+          # --health-retries=5
 
     steps:
       - name: Checkout code
