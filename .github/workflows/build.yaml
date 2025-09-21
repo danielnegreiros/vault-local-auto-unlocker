@@ -20,6 +20,7 @@ jobs:
           - "8213:8213"
         image: hashicorp/vault
         env:
+          VAULT_ADDR: "http://0.0.0.0:8200"
           VAULT_LOCAL_CONFIG: |
             ui = false
             disable_mlock = "true"

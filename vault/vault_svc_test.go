@@ -35,6 +35,11 @@ unlocker:
   request_timeout: 5
   url: http://localhost:8212
 
+storage:
+  type: boltdb
+  boltdb:
+    path: /tmp/integration.db
+
 provisioner:
   policies:
     - name: unlocker
