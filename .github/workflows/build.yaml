@@ -49,12 +49,16 @@ jobs:
 
       - name: Sonar Scan
         uses: sonarsource/sonarqube-scan-action@v4
+        # managed sonarqube likely to fail
+        continue-on-error: true
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
       - name: SonarQube Quality Gate Check
         uses: sonarsource/sonarqube-quality-gate-action@master
+        # managed sonarqube likely to fail
+        continue-on-error: true
         timeout-minutes: 5
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
