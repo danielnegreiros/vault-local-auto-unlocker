@@ -12,7 +12,6 @@ services:
       - "8213:8213"
     restart: always
     volumes:
-      - ./data:/vault/data/:rw
       - ./config:/vault/config/:rw
     cap_add:
       - IPC_LOCK
