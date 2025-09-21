@@ -7,3 +7,5 @@ run:
     - ./storage/
     - ./vault/
     - ./encryption/
+  skip-dirs:
+    - tests
