@@ -38,7 +38,7 @@ unlocker:
 storage:
   type: boltdb
   boltdb:
-    path: /tmp/integration.db
+    path: ../tests/vault/data/integration.db
 
 provisioner:
   policies:

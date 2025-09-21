@@ -2,14 +2,14 @@ version: '3.3'
 services:
   vault:
     image: hashicorp/vault
-    container_name: vault-new
+    container_name: vault-test
     environment:
-      VAULT_ADDR: "http://localhost:8200"
-      VAULT_API_ADDR: "http://localhost:8200"
-      VAULT_ADDRESS: "http://localhost:8200"
+      VAULT_ADDR: "http://localhost:8212"
+      VAULT_API_ADDR: "http://localhost:8212"
+      VAULT_ADDRESS: "http://localhost:8212"
     ports:
-      - "8200:8200"
-      - "8201:8201"
+      - "8212:8212"
+      - "8213:8213"
     restart: always
     volumes:
       - ./data:/vault/data/:rw

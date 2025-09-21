@@ -12,35 +12,43 @@ env:
 jobs:
   app-testing:
     runs-on: ubuntu-latest
-    services:
-      vault:
-        # Github Action wont allow default 8200
-        ports:
-          - "8212:8212"
-          - "8213:8213"
-        image: vault:1.13.3
-        env:
-          VAULT_LOCAL_CONFIG: |
-            ui = false
-            disable_mlock = "true"
+    # services:
+    #   vault:
+    #     # Github Action wont allow default 8200
+    #     ports:
+    #       - "8212:8212"
+    #       - "8213:8213"
+    #     image: vault:1.13.3
+    #     env:
+    #       VAULT_LOCAL_CONFIG: |
+    #         ui = false
+    #         disable_mlock = "true"
 
-            storage "file" {
-              path = "/vault/data/"
-            }
+    #         storage "file" {
+    #           path = "/vault/data/"
+    #         }
 
-            listener "tcp" {
-              address = "[::]:8212"
-              tls_disable = "true"
-            }
+    #         listener "tcp" {
+    #           address = "[::]:8212"
+    #           tls_disable = "true"
+    #         }
 
-            api_addr = "http://localhost:8212"
-            cluster_addr = "http://localhost:8213"
-        options: >-
-          --cap-add=IPC_LOCK
+    #         api_addr = "http://localhost:8212"
+    #         cluster_addr = "http://localhost:8213"
+    #     options: >-
+    #       --cap-add=IPC_LOCK
+        
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: SetUp Vault container for testing
+        run: |
+          cd tests/vault
+          mkdir -p ./data
+          docker-compose up -d
+          cd -
 
       - name: Set up Go
         uses: actions/setup-go@v5
