@@ -1,5 +1,9 @@
 run:
-  skip-dirs:
-    - tests/
-issues:
-  exclude-dirs-use-default: true
+  # Paths to include (optional). Defaults to "." if empty
+  path:
+    - ./*.go
+    - ./conf/
+    - ./exporter/
+    - ./storage/
+    - ./vault/
+    - ./encryption/
