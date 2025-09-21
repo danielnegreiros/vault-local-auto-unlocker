@@ -25,7 +25,7 @@ import (
 // 	token string
 // }
 
-	var data = []byte(`
+var data = []byte(`
 manager:
   repeat_interval: 60 # seconds
   operation_timeout: 50 # seconds
@@ -33,7 +33,7 @@ manager:
 unlocker:
   number_keys: 3
   request_timeout: 5
-  url: http://localhost:8212
+  url: http://10.10.100.200:8212
 
 storage:
   type: boltdb
@@ -111,7 +111,7 @@ func setup(data []byte) (*vaultManager, error) {
 
 }
 
-func TestRun(t *testing.T){
+func TestRun(t *testing.T) {
 	ctx := context.Background()
 
 	vm, err := setup(data)

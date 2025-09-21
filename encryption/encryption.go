@@ -122,10 +122,7 @@ func savePEMKey(fileName string, key *rsa.PrivateKey) error {
 	if err != nil {
 		return err
 	}
-	err = outFile.Close()
-	if err != nil {
-		return err
-	}
+	defer outFile.Close()
 
 	var privateKey = &pem.Block{
 		Type:  "RSA PRIVATE KEY",
@@ -144,10 +141,7 @@ func savePublicPEMKey(fileName string, pubkey *rsa.PublicKey) error {
 	if err != nil {
 		return err
 	}
-	err = outFile.Close()
-	if err != nil {
-		return err
-	}
+	defer outFile.Close()
 
 	return pem.Encode(outFile, pemkey)
 }
