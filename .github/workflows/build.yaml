@@ -20,9 +20,6 @@ jobs:
           - "8213:8213"
         image: hashicorp/vault
         env:
-          # VAULT_ADDR: "http://localhost:8212"
-          # VAULT_API_ADDR: "http://localhost:8212"
-          # VAULT_ADDRESS: "http://localhost:8212"
           VAULT_LOCAL_CONFIG: |
             ui = true
             disable_mlock = "true"
@@ -43,10 +40,6 @@ jobs:
             cluster_addr = "http://localhost:8213"
         options: >-
           --cap-add=IPC_LOCK
-          # --health-cmd="vault status"
-          # --health-interval=10s
-          # --health-timeout=5s
-          # --health-retries=5
 
     steps:
       - name: Checkout code
