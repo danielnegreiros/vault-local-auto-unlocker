@@ -14,14 +14,12 @@ jobs:
     runs-on: ubuntu-latest
     services:
       vault:
-        # Github Action wont allow default 8212
+        # Github Action wont allow default 8200
         ports:
           - "8212:8212"
-        image: hashicorp/vault
+          - "8213:8213"
+        image: vault:1.13.3
         env:
-          VAULT_ADDR: "http://0.0.0.0:8212"
-          VAULT_API_ADDR: "http://localhost:8212"
-          VAULT_ADDRESS: "http://localhost:8212"
           VAULT_LOCAL_CONFIG: |
             ui = false
             disable_mlock = "true"
