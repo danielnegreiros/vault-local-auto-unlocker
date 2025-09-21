@@ -39,9 +39,7 @@ jobs:
         run: make vet
 
       - name: Test
-        run: |
-          make test
-          rm -rf tests
+        run: make test
   
       - name: Lint
         # fixing some issues
