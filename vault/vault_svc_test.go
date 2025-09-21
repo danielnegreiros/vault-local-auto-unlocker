@@ -33,7 +33,7 @@ manager:
 unlocker:
   number_keys: 3
   request_timeout: 5
-  url: http://10.10.100.200:8200
+  url: http://localhost:8212
 
 provisioner:
   policies:
