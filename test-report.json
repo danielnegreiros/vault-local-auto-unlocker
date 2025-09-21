@@ -1,32 +1,32 @@
-{"Time":"2025-09-20T22:37:22.769779321-03:00","Action":"start","Package":"vault-unlocker"}
-{"Time":"2025-09-20T22:37:22.76986927-03:00","Action":"output","Package":"vault-unlocker","Output":"?   \tvault-unlocker\t[no test files]\n"}
-{"Time":"2025-09-20T22:37:22.769881092-03:00","Action":"skip","Package":"vault-unlocker","Elapsed":0}
-{"Time":"2025-09-20T22:37:22.769894397-03:00","Action":"start","Package":"vault-unlocker/conf"}
-{"Time":"2025-09-20T22:37:22.770003282-03:00","Action":"start","Package":"vault-unlocker/encryption"}
-{"Time":"2025-09-20T22:37:22.772271282-03:00","Action":"output","Package":"vault-unlocker/conf","Output":"testing: warning: no tests to run\n"}
-{"Time":"2025-09-20T22:37:22.772345141-03:00","Action":"output","Package":"vault-unlocker/conf","Output":"PASS\n"}
-{"Time":"2025-09-20T22:37:22.772791932-03:00","Action":"output","Package":"vault-unlocker/conf","Output":"ok  \tvault-unlocker/conf\t0.003s [no tests to run]\n"}
-{"Time":"2025-09-20T22:37:22.773429141-03:00","Action":"pass","Package":"vault-unlocker/conf","Elapsed":0.004}
-{"Time":"2025-09-20T22:37:22.77361942-03:00","Action":"output","Package":"vault-unlocker/encryption","Output":"testing: warning: no tests to run\n"}
-{"Time":"2025-09-20T22:37:22.773680695-03:00","Action":"output","Package":"vault-unlocker/encryption","Output":"PASS\n"}
-{"Time":"2025-09-20T22:37:22.77430476-03:00","Action":"output","Package":"vault-unlocker/encryption","Output":"ok  \tvault-unlocker/encryption\t0.004s [no tests to run]\n"}
-{"Time":"2025-09-20T22:37:22.77491578-03:00","Action":"pass","Package":"vault-unlocker/encryption","Elapsed":0.005}
-{"Time":"2025-09-20T22:37:24.112902888-03:00","Action":"start","Package":"vault-unlocker/exporter"}
-{"Time":"2025-09-20T22:37:24.113049243-03:00","Action":"start","Package":"vault-unlocker/storage"}
-{"Time":"2025-09-20T22:37:24.121071876-03:00","Action":"run","Package":"vault-unlocker/storage","Test":"TestBoltDB"}
-{"Time":"2025-09-20T22:37:24.121127561-03:00","Action":"output","Package":"vault-unlocker/storage","Test":"TestBoltDB","Output":"=== RUN   TestBoltDB\n"}
-{"Time":"2025-09-20T22:37:24.121176994-03:00","Action":"output","Package":"vault-unlocker/storage","Test":"TestBoltDB","Output":"2025/09/20 22:37:24 INFO insert key in boldtd table=keys key=0\n"}
-{"Time":"2025-09-20T22:37:24.122050558-03:00","Action":"output","Package":"vault-unlocker/storage","Test":"TestBoltDB","Output":"--- PASS: TestBoltDB (0.00s)\n"}
-{"Time":"2025-09-20T22:37:24.122097797-03:00","Action":"pass","Package":"vault-unlocker/storage","Test":"TestBoltDB","Elapsed":0}
-{"Time":"2025-09-20T22:37:24.122113687-03:00","Action":"output","Package":"vault-unlocker/storage","Output":"PASS\n"}
-{"Time":"2025-09-20T22:37:24.122864801-03:00","Action":"output","Package":"vault-unlocker/storage","Output":"ok  \tvault-unlocker/storage\t0.010s\n"}
-{"Time":"2025-09-20T22:37:24.12335835-03:00","Action":"output","Package":"vault-unlocker/exporter","Output":"testing: warning: no tests to run\n"}
-{"Time":"2025-09-20T22:37:24.123416029-03:00","Action":"output","Package":"vault-unlocker/exporter","Output":"PASS\n"}
-{"Time":"2025-09-20T22:37:24.12368782-03:00","Action":"pass","Package":"vault-unlocker/storage","Elapsed":0.011}
-{"Time":"2025-09-20T22:37:24.125293994-03:00","Action":"output","Package":"vault-unlocker/exporter","Output":"ok  \tvault-unlocker/exporter\t0.012s [no tests to run]\n"}
-{"Time":"2025-09-20T22:37:24.125839351-03:00","Action":"pass","Package":"vault-unlocker/exporter","Elapsed":0.013}
-{"Time":"2025-09-20T22:37:24.24858993-03:00","Action":"start","Package":"vault-unlocker/vault"}
-{"Time":"2025-09-20T22:37:24.258915408-03:00","Action":"output","Package":"vault-unlocker/vault","Output":"testing: warning: no tests to run\n"}
-{"Time":"2025-09-20T22:37:24.258963459-03:00","Action":"output","Package":"vault-unlocker/vault","Output":"PASS\n"}
-{"Time":"2025-09-20T22:37:24.26060023-03:00","Action":"output","Package":"vault-unlocker/vault","Output":"ok  \tvault-unlocker/vault\t0.012s [no tests to run]\n"}
-{"Time":"2025-09-20T22:37:24.261580996-03:00","Action":"pass","Package":"vault-unlocker/vault","Elapsed":0.013}
+{"Time":"2025-09-20T23:06:56.243354965-03:00","Action":"start","Package":"vault-unlocker"}
+{"Time":"2025-09-20T23:06:56.243499737-03:00","Action":"output","Package":"vault-unlocker","Output":"?   \tvault-unlocker\t[no test files]\n"}
+{"Time":"2025-09-20T23:06:56.243537138-03:00","Action":"skip","Package":"vault-unlocker","Elapsed":0}
+{"Time":"2025-09-20T23:06:56.24355412-03:00","Action":"start","Package":"vault-unlocker/conf"}
+{"Time":"2025-09-20T23:06:56.243564349-03:00","Action":"output","Package":"vault-unlocker/conf","Output":"testing: warning: no tests to run\n"}
+{"Time":"2025-09-20T23:06:56.243571803-03:00","Action":"output","Package":"vault-unlocker/conf","Output":"PASS\n"}
+{"Time":"2025-09-20T23:06:56.243577644-03:00","Action":"output","Package":"vault-unlocker/conf","Output":"ok  \tvault-unlocker/conf\t(cached) [no tests to run]\n"}
+{"Time":"2025-09-20T23:06:56.243585389-03:00","Action":"pass","Package":"vault-unlocker/conf","Elapsed":0}
+{"Time":"2025-09-20T23:06:56.243780556-03:00","Action":"start","Package":"vault-unlocker/encryption"}
+{"Time":"2025-09-20T23:06:56.243794061-03:00","Action":"output","Package":"vault-unlocker/encryption","Output":"testing: warning: no tests to run\n"}
+{"Time":"2025-09-20T23:06:56.243801896-03:00","Action":"output","Package":"vault-unlocker/encryption","Output":"PASS\n"}
+{"Time":"2025-09-20T23:06:56.243809481-03:00","Action":"output","Package":"vault-unlocker/encryption","Output":"ok  \tvault-unlocker/encryption\t(cached) [no tests to run]\n"}
+{"Time":"2025-09-20T23:06:56.243816454-03:00","Action":"pass","Package":"vault-unlocker/encryption","Elapsed":0}
+{"Time":"2025-09-20T23:06:56.243977827-03:00","Action":"start","Package":"vault-unlocker/exporter"}
+{"Time":"2025-09-20T23:06:56.243988808-03:00","Action":"output","Package":"vault-unlocker/exporter","Output":"testing: warning: no tests to run\n"}
+{"Time":"2025-09-20T23:06:56.243995401-03:00","Action":"output","Package":"vault-unlocker/exporter","Output":"PASS\n"}
+{"Time":"2025-09-20T23:06:56.244001191-03:00","Action":"output","Package":"vault-unlocker/exporter","Output":"ok  \tvault-unlocker/exporter\t(cached) [no tests to run]\n"}
+{"Time":"2025-09-20T23:06:56.244007904-03:00","Action":"pass","Package":"vault-unlocker/exporter","Elapsed":0}
+{"Time":"2025-09-20T23:06:56.244144571-03:00","Action":"start","Package":"vault-unlocker/storage"}
+{"Time":"2025-09-20T23:06:56.244161002-03:00","Action":"run","Package":"vault-unlocker/storage","Test":"TestBoltDB"}
+{"Time":"2025-09-20T23:06:56.244168056-03:00","Action":"output","Package":"vault-unlocker/storage","Test":"TestBoltDB","Output":"=== RUN   TestBoltDB\n"}
+{"Time":"2025-09-20T23:06:56.244174498-03:00","Action":"output","Package":"vault-unlocker/storage","Test":"TestBoltDB","Output":"2025/09/20 22:37:24 INFO insert key in boldtd table=keys key=0\n"}
+{"Time":"2025-09-20T23:06:56.244184887-03:00","Action":"output","Package":"vault-unlocker/storage","Test":"TestBoltDB","Output":"--- PASS: TestBoltDB (0.00s)\n"}
+{"Time":"2025-09-20T23:06:56.24419193-03:00","Action":"pass","Package":"vault-unlocker/storage","Test":"TestBoltDB","Elapsed":0}
+{"Time":"2025-09-20T23:06:56.244198122-03:00","Action":"output","Package":"vault-unlocker/storage","Output":"PASS\n"}
+{"Time":"2025-09-20T23:06:56.244204043-03:00","Action":"output","Package":"vault-unlocker/storage","Output":"ok  \tvault-unlocker/storage\t(cached)\n"}
+{"Time":"2025-09-20T23:06:56.244211046-03:00","Action":"pass","Package":"vault-unlocker/storage","Elapsed":0}
+{"Time":"2025-09-20T23:06:57.364976612-03:00","Action":"start","Package":"vault-unlocker/vault"}
+{"Time":"2025-09-20T23:06:57.376983986-03:00","Action":"output","Package":"vault-unlocker/vault","Output":"testing: warning: no tests to run\n"}
+{"Time":"2025-09-20T23:06:57.377094474-03:00","Action":"output","Package":"vault-unlocker/vault","Output":"PASS\n"}
+{"Time":"2025-09-20T23:06:57.378745452-03:00","Action":"output","Package":"vault-unlocker/vault","Output":"ok  \tvault-unlocker/vault\t0.013s [no tests to run]\n"}
+{"Time":"2025-09-20T23:06:57.379221919-03:00","Action":"pass","Package":"vault-unlocker/vault","Elapsed":0.014}
