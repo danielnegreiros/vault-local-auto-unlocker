@@ -30,7 +30,8 @@ tidy: ## Clean up go.mod and go.sum
 
 lint: ## Run static code analysis
 	@echo "Running linter..."
-	golangci-lint run ./...
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+	golangci-lint run --out-format checkstyle > golangci-lint-report.xml
 
 vet: ## Run go vet
 	@echo "Running go vet..."
@@ -40,7 +41,8 @@ vet: ## Run go vet
 
 test: ## Run tests
 	@echo "Running tests..."
-	go test -v ./...
+	go test -covermode=atomic -coverprofile=coverage.out ./...
+	go test -json ./... > test-report.json
 
 coverage: ## Generate test coverage report
 	@echo "Generating coverage report..."

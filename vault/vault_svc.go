@@ -78,9 +78,10 @@ func (v *vaultManager) Run(ctx context.Context) error {
 
 			switch authMount.AuthType {
 			case "approle":
-				// TODO - Make sure approles has a default secretID TTL of 24 hours
-				// TODO - Create or update the secretID if already exists
-				v.exportSecretstoK8s(ctx, authMount.Path, authMount.AppRoles, token)
+				err = v.exportSecretstoK8s(ctx, authMount.Path, authMount.AppRoles, token)
+				if err != nil {
+					slog.Warn("not possible to export secret to kubernetes", "error", err)
+				}
 			default:
 				slog.Info("auth type not supported for export, continuing...", "type", authMount.AuthType)
 				continue
