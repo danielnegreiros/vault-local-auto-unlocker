@@ -22,7 +22,6 @@ jobs:
       - name: SetUp Vault container for testing
         run: |
           cd tests/vault
-          mkdir -p ./data
           docker compose up -d
           cd -
 
@@ -42,8 +41,6 @@ jobs:
         run: make test
   
       - name: Lint
-        # fixing some issues
-        continue-on-error: true
         run: make lint
 
       - name: Upload test results
@@ -64,14 +61,6 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-
-      - name: SonarQube Quality Gate Check
-        uses: sonarsource/sonarqube-quality-gate-action@master
-        # managed sonarqube likely to fail
-        continue-on-error: true
-        timeout-minutes: 5
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   # build-and-push:
   #   needs: app-testing
