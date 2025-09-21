@@ -14,11 +14,14 @@ jobs:
     runs-on: ubuntu-latest
     services:
       vault:
+        ports:
+          - "82000:82000"
+          - "82010:82010"
         image: hashicorp/vault
         env:
-          VAULT_ADDR: "http://localhost:8200"
-          VAULT_API_ADDR: "http://localhost:8200"
-          VAULT_ADDRESS: "http://localhost:8200"
+          VAULT_ADDR: "http://localhost:82000"
+          VAULT_API_ADDR: "http://localhost:82000"
+          VAULT_ADDRESS: "http://localhost:82000"
           VAULT_LOCAL_CONFIG: |
             ui = true
             disable_mlock = "true"
@@ -29,14 +32,14 @@ jobs:
 
 
             listener "tcp" {
-              address = "[::]:8200"
+              address = "[::]:82000"
               tls_disable = "true"
               # tls_cert_file = "/certs/server.crt"
               # tls_key_file  = "/certs/server.key"
             }
 
-            api_addr = "http://localhost:8200"
-            cluster_addr = "http://localhost:8201"
+            api_addr = "http://localhost:82000"
+            cluster_addr = "http://localhost:82010"
         options: >-
           --cap-add=IPC_LOCK
           --health-cmd="vault status"
