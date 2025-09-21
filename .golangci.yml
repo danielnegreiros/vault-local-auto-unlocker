@@ -1,0 +1,4 @@
+issues:
+  exclude-dirs:
+    - tests/
+  exclude-dirs-use-default: true
