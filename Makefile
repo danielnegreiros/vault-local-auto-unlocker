@@ -28,21 +28,26 @@ tidy: ## Clean up go.mod and go.sum
 	@echo "Tidying up module dependencies..."
 	go mod tidy
 
+dependencies: ## Set up dependencies
+	@echo "setup dependencies"
+	go mod download
+	go mod verify
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+	go install github.com/jpoles1/gopherbadger@latest
+
 lint: ## Run static code analysis
 	@echo "Running linter..."
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 	golangci-lint run --out-format checkstyle > golangci-lint-report.xml
 
 vet: ## Run go vet
 	@echo "Running go vet..."
 	go vet ./...
 
-##@ Testing
-
 test: ## Run tests
 	@echo "Running tests..."
 	go test -covermode=atomic -coverprofile=coverage.out ./...
 	go test -json ./... > test-report.json
+	gopherbadger -covercmd "go tool cover -func=coverage.out"
 
 coverage: ## Generate test coverage report
 	@echo "Generating coverage report..."

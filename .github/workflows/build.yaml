@@ -23,10 +23,7 @@ jobs:
           cache: true
 
       - name: Download dependencies
-        run: go mod download
-
-      - name: Verify dependencies
-        run: go mod verify
+        run:  make dependencies
 
       - name: Run go vet
         run: make vet
@@ -38,11 +35,29 @@ jobs:
       - name: Lint
         run: |
           make lint
-  
-      - uses: sonarsource/sonarqube-scan-action@v4
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: |
+            coverage.out
+            test-report.json
+            golangci-lint-report.xml
+            coverage_badge.png
+
+      - name: Sonar Scan
+        uses: sonarsource/sonarqube-scan-action@v4
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+      - name: SonarQube Quality Gate Check
+        uses: sonarsource/sonarqube-quality-gate-action@master
+        timeout-minutes: 5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   # build-and-push:
   #   needs: app-testing
